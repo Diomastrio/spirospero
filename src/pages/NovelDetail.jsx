@@ -8,14 +8,18 @@ import {
   Loader,
   BookOpen,
   Calendar,
+  Star,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import BookmarkButton from "../components/BookmarkButton";
 import supabase from "../services/supabaseClient";
+import RatingStars from "../components/RatingStars";
+import { useUser } from "../authentication/authHooks";
 
 function NovelDetail() {
   const { id } = useParams();
+  const { user } = useUser();
 
   // Fetch novel details
   const { data: novel, isLoading } = useQuery({
@@ -112,7 +116,7 @@ function NovelDetail() {
               <BookmarkButton
                 novelId={novel.id}
                 size={20}
-                className="btn btn-outline btn-sm flex-1"
+                className="btn hover:shadow-primary btn-sm flex-1 justify-center "
               />
 
               {chapters && chapters.length > 0 && (
@@ -154,9 +158,24 @@ function NovelDetail() {
 
             {novel.genre && (
               <div className="mb-6">
-                <span className="px-3 py-1 bg-gray-800 text-xs rounded-full">
-                  {novel.genre}
-                </span>
+                <div className="flex flex-wrap gap-2 mb-3">
+                  <span className="px-3 py-1 bg-gray-800 text-xs rounded-full">
+                    {novel.genre}
+                  </span>
+                  <span className="px-3 py-1 bg-gray-800 text-xs rounded-full flex items-center">
+                    <Star
+                      size={14}
+                      className="text-yellow-400 mr-1 fill-yellow-400"
+                    />
+                    {novel.rating || "0"} / 5
+                    <span className="ml-1 opacity-70">
+                      ({novel.rating_count || 0} ratings)
+                    </span>
+                  </span>
+                </div>
+
+                {/* Add the rating component */}
+                <RatingStars novelId={novel.id} />
               </div>
             )}
 
