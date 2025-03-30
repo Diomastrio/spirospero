@@ -426,3 +426,6 @@ FodyWeavers.xsd
 # JetBrains Rider
 *.sln.iml
 >>>>>>> 3c2c07dd880210157a538b579d74581e5aaa3bea
+
+# Local Netlify folder
+.netlify
