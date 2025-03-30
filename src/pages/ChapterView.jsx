@@ -9,12 +9,14 @@ import {
   ChevronLeft,
   ChevronRight,
   BookOpen,
+  MessageCircle, // Optional: Add this icon for comments section header
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import supabase from "../services/supabaseClient";
 import { useThemeStore } from "../store/useThemeStore";
+import CommentBox from "../components/CommentBox"; // Import CommentBox component
 
 function ChapterView() {
   const { novelId, chapterId } = useParams();
@@ -194,6 +196,15 @@ function ChapterView() {
             ) : (
               <div></div>
             )}
+          </div>
+
+          {/* Comments Section */}
+          <div className="mt-8">
+            <div className="flex items-center mb-4">
+              <MessageCircle size={18} className="mr-2" />
+              <h3 className="text-lg font-semibold">Comments</h3>
+            </div>
+            <CommentBox pageId={`chapter-${chapterId}`} />
           </div>
 
           {/* Chapter Selection */}

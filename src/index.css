@@ -1,3 +1,24 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+/* You can add this to your global CSS or create a new stylesheet */
+
+.commentbox {
+  margin-top: 1rem;
+  background-color: var(--base-100);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+/* Optional: Style the input fields and buttons to match your theme */
+.commentbox textarea,
+.commentbox input {
+  background-color: var(--base-100);
+  color: var(--base-content);
+  border: 1px solid var(--base-300);
+}
+
+.commentbox button {
+  background-color: var(--primary);
+  color: var(--primary-content);
+}
