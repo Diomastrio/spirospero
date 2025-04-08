@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   ArrowLeft,
   BookOpen,
@@ -12,8 +12,9 @@ import {
   Link as LinkIcon,
   Image,
   Code,
-  Sparkles, // Add this import
-  X, // Add this import
+  Sparkles,
+  X,
+  Wand2, // Add this import for the magic wand icon
 } from "lucide-react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
@@ -24,7 +25,7 @@ import {
   useCreateChapter,
   useUpdateChapter,
 } from "../services/chapterHooks";
-import { getWritingInspiration } from "../services/geminiService"; // Add this import
+import { getWritingInspiration } from "../services/geminiService";
 import { toast } from "react-hot-toast";
 
 const ChapterForm = () => {
@@ -55,6 +56,13 @@ const ChapterForm = () => {
   const [inspirationPrompt, setInspirationPrompt] = useState("");
   const [inspiration, setInspiration] = useState("");
   const [isLoadingInspiration, setIsLoadingInspiration] = useState(false);
+
+  const [showSelectionPrompt, setShowSelectionPrompt] = useState(false);
+  const [selectionRange, setSelectionRange] = useState(null);
+  const [selectionPosition, setSelectionPosition] = useState({ x: 0, y: 0 });
+  const [selectionPrompt, setSelectionPrompt] = useState("");
+  const [isProcessingSelection, setIsProcessingSelection] = useState(false);
+  const textareaRef = useRef(null);
 
   useEffect(() => {
     if (isEditMode && chapter) {
@@ -179,6 +187,115 @@ const ChapterForm = () => {
     toast.success("Inspiration added to your chapter");
   };
 
+  const handleTextSelection = () => {
+    const textarea = document.getElementById("content");
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+
+    if (start !== end && viewMode === "write") {
+      const selectedText = formData.content.substring(start, end);
+      if (selectedText.trim()) {
+        setSelectionRange({ start, end });
+
+        // Calculate position for the popup
+        const textareaRect = textarea.getBoundingClientRect();
+        const selectionRect = getSelectionCoords(textarea);
+
+        setSelectionPosition({
+          x: selectionRect ? selectionRect.x : textareaRect.left + 100,
+          y: selectionRect ? selectionRect.y - 40 : textareaRect.top - 40,
+        });
+
+        setShowSelectionPrompt(true);
+      }
+    } else {
+      setShowSelectionPrompt(false);
+    }
+  };
+
+  const getSelectionCoords = (textarea) => {
+    if (!textarea) return null;
+
+    // Create a range from the selection
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+
+    // Create a temporary div with the same styling as the textarea
+    const div = document.createElement("div");
+    div.style.position = "absolute";
+    div.style.left = "-9999px";
+    div.style.fontFamily = getComputedStyle(textarea).fontFamily;
+    div.style.fontSize = getComputedStyle(textarea).fontSize;
+    div.style.lineHeight = getComputedStyle(textarea).lineHeight;
+    div.style.whiteSpace = "pre-wrap";
+    div.style.wordWrap = "break-word";
+    div.style.width = `${textarea.clientWidth}px`;
+
+    // Get the text before the selection
+    const textBeforeSelection = formData.content.substring(0, start);
+
+    // Create a span for the text before the selection
+    const textBeforeSpan = document.createElement("span");
+    textBeforeSpan.textContent = textBeforeSelection;
+    div.appendChild(textBeforeSpan);
+
+    // Create a span for the selection
+    const selectionSpan = document.createElement("span");
+    selectionSpan.textContent = formData.content.substring(start, end);
+    selectionSpan.style.backgroundColor = "yellow";
+    div.appendChild(selectionSpan);
+
+    document.body.appendChild(div);
+
+    const rect = selectionSpan.getBoundingClientRect();
+    const textareaRect = textarea.getBoundingClientRect();
+
+    document.body.removeChild(div);
+
+    return {
+      x: textareaRect.left + (rect.left - div.getBoundingClientRect().left),
+      y: textareaRect.top + (rect.top - div.getBoundingClientRect().top),
+    };
+  };
+
+  const processSelectedText = async () => {
+    if (!selectionRange || !selectionPrompt.trim()) return;
+
+    setIsProcessingSelection(true);
+
+    const selectedText = formData.content.substring(
+      selectionRange.start,
+      selectionRange.end
+    );
+    const prompt = `Modify this text: "${selectedText}"\n\nInstructions: ${selectionPrompt}\n\nProvide ONLY the modified text, no explanations.`;
+
+    try {
+      const result = await getWritingInspiration(prompt);
+      if (result) {
+        // Extract just the modified text content without any explanations
+        const modifiedText = result.trim();
+
+        // Replace the selected text with the modified text
+        const newContent =
+          formData.content.substring(0, selectionRange.start) +
+          modifiedText +
+          formData.content.substring(selectionRange.end);
+
+        setFormData((prev) => ({ ...prev, content: newContent }));
+        toast.success("Text modified successfully");
+      }
+    } catch (error) {
+      console.error("Error processing text:", error);
+      toast.error("Failed to process text");
+    } finally {
+      setIsProcessingSelection(false);
+      setShowSelectionPrompt(false);
+      setSelectionPrompt("");
+    }
+  };
+
   const isLoading = isLoadingNovel || (isEditMode && isLoadingChapter);
   const isSaving = isCreating || isUpdating;
 
@@ -190,6 +307,29 @@ const ChapterForm = () => {
       </div>
     );
   }
+
+  const contentEditorSection =
+    viewMode === "write" ? (
+      <textarea
+        id="content"
+        name="content"
+        rows={20}
+        required
+        ref={textareaRef}
+        className="w-full px-3 py-2 border border-gray-300 rounded-b-md focus:outline-none focus:ring-2 focus:ring-primary font-mono"
+        placeholder="Write your chapter content here using Markdown..."
+        value={formData.content}
+        onChange={handleChange}
+        onMouseUp={handleTextSelection}
+        onKeyUp={handleTextSelection}
+      />
+    ) : (
+      <div className="w-full h-[500px] overflow-y-auto border border-gray-300 rounded-b-md p-4 prose prose-lg max-w-none bg-base-100">
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+          {formData.content || "Preview will appear here..."}
+        </ReactMarkdown>
+      </div>
+    );
 
   return (
     <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
@@ -360,24 +500,7 @@ const ChapterForm = () => {
                 </div>
 
                 {/* Editor or Preview based on mode */}
-                {viewMode === "write" ? (
-                  <textarea
-                    id="content"
-                    name="content"
-                    rows={20}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-b-md focus:outline-none focus:ring-2 focus:ring-primary font-mono"
-                    placeholder="Write your chapter content here using Markdown..."
-                    value={formData.content}
-                    onChange={handleChange}
-                  />
-                ) : (
-                  <div className="w-full h-[500px] overflow-y-auto border border-gray-300 rounded-b-md p-4 prose prose-lg max-w-none bg-base-100">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {formData.content || "Preview will appear here..."}
-                    </ReactMarkdown>
-                  </div>
-                )}
+                {contentEditorSection}
 
                 {/* Markdown Help Text */}
                 <div className="mt-2 text-xs ">
@@ -536,6 +659,55 @@ const ChapterForm = () => {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {showSelectionPrompt && (
+        <div
+          className="fixed z-50 bg-base-100 shadow-lg rounded-lg border border-primary p-2 flex flex-col"
+          style={{
+            top: `${selectionPosition.y}px`,
+            left: `${selectionPosition.x}px`,
+            maxWidth: "300px",
+          }}
+        >
+          <div className="flex items-center gap-1 mb-2 text-xs font-medium text-primary">
+            <Wand2 size={14} />
+            Modify selected text
+          </div>
+          <div className="flex gap-1">
+            <input
+              type="text"
+              className="input input-bordered input-sm flex-grow"
+              placeholder="Instruction for Gemini..."
+              value={selectionPrompt}
+              onChange={(e) => setSelectionPrompt(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  processSelectedText();
+                }
+                e.stopPropagation();
+              }}
+            />
+            <button
+              className="btn btn-primary btn-sm"
+              onClick={processSelectedText}
+              disabled={isProcessingSelection}
+            >
+              {isProcessingSelection ? (
+                <Loader size={14} className="animate-spin" />
+              ) : (
+                <Wand2 size={14} />
+              )}
+            </button>
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => setShowSelectionPrompt(false)}
+            >
+              <X size={14} />
+            </button>
           </div>
         </div>
       )}
