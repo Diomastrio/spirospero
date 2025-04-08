@@ -5,20 +5,31 @@
 
 .commentbox {
   margin-top: 1rem;
-  background-color: var(--base-100);
+  background-color: hsl(
+    var(--b2) / var(--tw-bg-opacity, 1)
+  ); /* Use theme background variable */
+  color: hsl(
+    var(--bc) / var(--tw-text-opacity, 1)
+  ); /* Use theme text color variable */
   border-radius: 0.5rem;
   overflow: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Optional: Style the input fields and buttons to match your theme */
 .commentbox textarea,
 .commentbox input {
-  background-color: var(--base-100);
-  color: var(--base-content);
-  border: 1px solid var(--base-300);
+  background-color: hsl(var(--b1) / var(--tw-bg-opacity, 1));
+  color: hsl(var(--bc) / var(--tw-text-opacity, 1));
+  border: 1px solid hsl(var(--b3) / var(--tw-border-opacity, 1));
 }
 
 .commentbox button {
-  background-color: var(--primary);
-  color: var(--primary-content);
+  background-color: hsl(var(--p) / var(--tw-bg-opacity, 1)) !important;
+  color: hsl(var(--pc) / var(--tw-text-opacity, 1)) !important;
+}
+
+/* Style for comment box submit button and other interactive elements */
+.commentbox .highlight {
+  color: hsl(var(--p) / var(--tw-text-opacity, 1)) !important;
 }
