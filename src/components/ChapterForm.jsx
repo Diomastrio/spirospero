@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react"; // Added useCallback
 import {
   ArrowLeft,
   BookOpen,
@@ -14,7 +14,10 @@ import {
   Code,
   Sparkles,
   X,
-  Wand2, // Add this import for the magic wand icon
+  Wand2,
+  ClipboardPaste, // Added
+  Check, // Added
+  Copy, // Added
 } from "lucide-react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
@@ -27,6 +30,94 @@ import {
 } from "../services/chapterHooks";
 import { getWritingInspiration } from "../services/geminiService";
 import { toast } from "react-hot-toast";
+
+// *** NEW: Comparison Modal Component ***
+const ComparisonModal = ({
+  isOpen,
+  onClose,
+  originalText,
+  pastedText,
+  onKeepOriginal,
+  onKeepPasted,
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
+      <div className="bg-base-100 rounded-lg shadow-xl max-w-3xl w-full max-h-[80vh] flex flex-col">
+        <div className="p-4 border-b border-base-300 flex justify-between items-center">
+          <h3 className="text-lg font-medium flex items-center">
+            <ClipboardPaste size={18} className="mr-2" />
+            Compare Text
+          </h3>
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-base-300 rounded-full"
+            aria-label="Close modal"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="p-6 overflow-y-auto flex-grow">
+          {/* Modern Border Container */}
+          <div className="border border-base-300 rounded-md p-1">
+            <div className="flex flex-col md:flex-row gap-4">
+              {/* Original Text Panel */}
+              <div className="flex-1 bg-base-200 p-3 rounded">
+                <h4 className="text-sm font-semibold mb-2 border-b border-base-300 pb-1">
+                  Original (Selected)
+                </h4>
+                <pre className="whitespace-pre-wrap text-sm font-mono break-words">
+                  {originalText}
+                </pre>
+                <div className="mt-3 text-right">
+                  <button
+                    onClick={onKeepOriginal}
+                    className="btn btn-sm btn-outline btn-success flex items-center gap-1"
+                  >
+                    <Check size={16} /> Keep This
+                  </button>
+                </div>
+              </div>
+
+              {/* Pasted Text Panel */}
+              <div className="flex-1 bg-base-200 p-3 rounded">
+                <h4 className="text-sm font-semibold mb-2 border-b border-base-300 pb-1">
+                  Pasted (From Clipboard)
+                </h4>
+                <pre className="whitespace-pre-wrap text-sm font-mono break-words">
+                  {pastedText || (
+                    <span className="opacity-50">
+                      (Clipboard empty or could not read)
+                    </span>
+                  )}
+                </pre>
+                <div className="mt-3 text-right">
+                  {pastedText && (
+                    <button
+                      onClick={onKeepPasted}
+                      className="btn btn-sm btn-outline btn-success flex items-center gap-1"
+                    >
+                      <Check size={16} /> Keep This
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-4 border-t border-base-300 flex justify-end">
+          <button onClick={onClose} className="btn btn-ghost">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+// *** END: Comparison Modal Component ***
 
 const ChapterForm = () => {
   const { novelId, chapterId } = useParams();
@@ -64,6 +155,22 @@ const ChapterForm = () => {
   const [isProcessingSelection, setIsProcessingSelection] = useState(false);
   const textareaRef = useRef(null);
 
+  // State for custom context menu
+  const [showContextMenu, setShowContextMenu] = useState(false);
+  const [contextMenuPosition, setContextMenuPosition] = useState({
+    x: 0,
+    y: 0,
+  });
+  const [contextMenuSelectionRange, setContextMenuSelectionRange] =
+    useState(null);
+
+  // State for comparison modal
+  const [showComparisonModal, setShowComparisonModal] = useState(false);
+  const [comparisonData, setComparisonData] = useState({
+    original: "",
+    pasted: "",
+  });
+
   useEffect(() => {
     if (isEditMode && chapter) {
       setFormData({
@@ -73,6 +180,19 @@ const ChapterForm = () => {
       });
     }
   }, [isEditMode, chapter]);
+
+  // Close context menu when clicking elsewhere
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showContextMenu) {
+        setShowContextMenu(false);
+      }
+    };
+    document.addEventListener("click", handleClickOutside);
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+    };
+  }, [showContextMenu]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -187,76 +307,161 @@ const ChapterForm = () => {
     toast.success("Inspiration added to your chapter");
   };
 
-  const handleTextSelection = () => {
-    const textarea = document.getElementById("content");
-    if (!textarea) return;
+  // Combined handler for selection changes (mouse up, key up)
+  const handleSelectionChange = useCallback(() => {
+    const textarea = textareaRef.current;
+    if (!textarea || viewMode !== "write") {
+      setShowSelectionPrompt(false); // Hide AI prompt if not writing or no textarea
+      return;
+    }
 
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
 
-    if (start !== end && viewMode === "write") {
+    if (start !== end) {
       const selectedText = formData.content.substring(start, end);
       if (selectedText.trim()) {
+        // Keep existing AI prompt logic
         setSelectionRange({ start, end });
-
-        // Calculate position for the popup
         const textareaRect = textarea.getBoundingClientRect();
-        const selectionRect = getSelectionCoords(textarea);
-
+        const selectionRect = getSelectionCoords(textarea); // Make sure this function exists and works
         setSelectionPosition({
           x: selectionRect ? selectionRect.x : textareaRect.left + 100,
-          y: selectionRect ? selectionRect.y - 40 : textareaRect.top - 40,
+          y: selectionRect ? selectionRect.y - 40 : textareaRect.top - 40, // Adjust Y position
         });
-
         setShowSelectionPrompt(true);
+      } else {
+        setShowSelectionPrompt(false);
       }
     } else {
-      setShowSelectionPrompt(false);
+      setShowSelectionPrompt(false); // Hide AI prompt if selection is cleared
     }
+    // Always hide context menu on selection change
+    setShowContextMenu(false);
+  }, [formData.content, viewMode]); // Add dependencies
+
+  // Handler for right-click context menu
+  const handleContextMenu = useCallback(
+    (event) => {
+      const textarea = textareaRef.current;
+      if (!textarea || viewMode !== "write") return;
+
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+
+      // Only show context menu if there's a selection
+      if (start !== end) {
+        event.preventDefault(); // Prevent default browser context menu
+        setShowSelectionPrompt(false); // Hide AI prompt if context menu is shown
+        setContextMenuPosition({ x: event.clientX, y: event.clientY });
+        setContextMenuSelectionRange({ start, end }); // Store the range for later use
+        setShowContextMenu(true);
+      } else {
+        setShowContextMenu(false); // Hide if no selection on right click
+      }
+    },
+    [viewMode]
+  ); // Add dependencies
+
+  // *** MODIFIED: Opens the comparison modal ***
+  const handlePasteForComparison = async () => {
+    if (!contextMenuSelectionRange) return;
+
+    try {
+      const pastedText = await navigator.clipboard.readText();
+      const { start, end } = contextMenuSelectionRange;
+      const originalText = formData.content.substring(start, end);
+
+      setComparisonData({ original: originalText, pasted: pastedText });
+      setShowComparisonModal(true); // Open the modal
+    } catch (err) {
+      console.error("Failed to read clipboard contents: ", err);
+      toast.error(
+        "Failed to paste from clipboard. Browser permissions might be needed."
+      );
+    } finally {
+      setShowContextMenu(false); // Hide context menu after action
+      // Keep contextMenuSelectionRange, it's needed for insertion
+    }
+  };
+
+  // *** NEW: Function to insert chosen text from modal ***
+  const insertComparedText = (textToInsert) => {
+    if (!contextMenuSelectionRange) return;
+
+    const { start, end } = contextMenuSelectionRange;
+    const currentContent = formData.content;
+
+    const newContent =
+      currentContent.substring(0, start) +
+      textToInsert +
+      currentContent.substring(end);
+
+    setFormData((prev) => ({ ...prev, content: newContent }));
+
+    // Focus and set cursor position after update
+    const textarea = textareaRef.current;
+    if (textarea) {
+      setTimeout(() => {
+        textarea.focus();
+        const newCursorPos = start + textToInsert.length;
+        textarea.setSelectionRange(newCursorPos, newCursorPos);
+      }, 0);
+    }
+
+    setShowComparisonModal(false); // Close modal
+    setContextMenuSelectionRange(null); // Clear the range
+    toast.success("Text updated from comparison.");
+  };
+
+  // *** NEW: Handlers for modal buttons ***
+  const handleKeepOriginal = () => {
+    insertComparedText(comparisonData.original);
+  };
+
+  const handleKeepPasted = () => {
+    insertComparedText(comparisonData.pasted);
   };
 
   const getSelectionCoords = (textarea) => {
     if (!textarea) return null;
-
-    // Create a range from the selection
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
+    if (start === end) return null; // No selection
 
-    // Create a temporary div with the same styling as the textarea
-    const div = document.createElement("div");
-    div.style.position = "absolute";
-    div.style.left = "-9999px";
-    div.style.fontFamily = getComputedStyle(textarea).fontFamily;
-    div.style.fontSize = getComputedStyle(textarea).fontSize;
-    div.style.lineHeight = getComputedStyle(textarea).lineHeight;
-    div.style.whiteSpace = "pre-wrap";
-    div.style.wordWrap = "break-word";
-    div.style.width = `${textarea.clientWidth}px`;
+    const properties = [
+      "lineHeight",
+      "paddingTop",
+      "paddingLeft",
+      "borderTopWidth",
+      "borderLeftWidth",
+      "fontFamily",
+      "fontSize",
+    ];
+    const computedStyle = window.getComputedStyle(textarea);
+    const context = document.createElement("canvas").getContext("2d");
+    context.font = `${computedStyle.fontSize} ${computedStyle.fontFamily}`;
 
-    // Get the text before the selection
-    const textBeforeSelection = formData.content.substring(0, start);
+    const textBefore = textarea.value.substring(0, start);
+    const lines = textBefore.split("\n");
+    const lineIndex = lines.length - 1;
+    const charIndex = lines[lineIndex].length;
 
-    // Create a span for the text before the selection
-    const textBeforeSpan = document.createElement("span");
-    textBeforeSpan.textContent = textBeforeSelection;
-    div.appendChild(textBeforeSpan);
+    const lineHeight = parseFloat(computedStyle.lineHeight);
+    const paddingTop = parseFloat(computedStyle.paddingTop);
+    const paddingLeft = parseFloat(computedStyle.paddingLeft);
+    const borderTop = parseFloat(computedStyle.borderTopWidth);
+    const borderLeft = parseFloat(computedStyle.borderLeftWidth);
 
-    // Create a span for the selection
-    const selectionSpan = document.createElement("span");
-    selectionSpan.textContent = formData.content.substring(start, end);
-    selectionSpan.style.backgroundColor = "yellow";
-    div.appendChild(selectionSpan);
+    const x =
+      paddingLeft + borderLeft + context.measureText(lines[lineIndex]).width;
+    const y = paddingTop + borderTop + lineIndex * lineHeight;
 
-    document.body.appendChild(div);
-
-    const rect = selectionSpan.getBoundingClientRect();
     const textareaRect = textarea.getBoundingClientRect();
 
-    document.body.removeChild(div);
-
     return {
-      x: textareaRect.left + (rect.left - div.getBoundingClientRect().left),
-      y: textareaRect.top + (rect.top - div.getBoundingClientRect().top),
+      x: textareaRect.left + x - textarea.scrollLeft,
+      y: textareaRect.top + y - textarea.scrollTop,
     };
   };
 
@@ -274,10 +479,8 @@ const ChapterForm = () => {
     try {
       const result = await getWritingInspiration(prompt);
       if (result) {
-        // Extract just the modified text content without any explanations
         const modifiedText = result.trim();
 
-        // Replace the selected text with the modified text
         const newContent =
           formData.content.substring(0, selectionRange.start) +
           modifiedText +
@@ -320,8 +523,9 @@ const ChapterForm = () => {
         placeholder="Write your chapter content here using Markdown..."
         value={formData.content}
         onChange={handleChange}
-        onMouseUp={handleTextSelection}
-        onKeyUp={handleTextSelection}
+        onMouseUp={handleSelectionChange} // Use combined handler
+        onKeyUp={handleSelectionChange} // Use combined handler
+        onContextMenu={handleContextMenu} // Add context menu handler
       />
     ) : (
       <div className="w-full h-[500px] overflow-y-auto border border-gray-300 rounded-b-md p-4 prose prose-lg max-w-none bg-base-100">
@@ -662,6 +866,39 @@ const ChapterForm = () => {
           </div>
         </div>
       )}
+
+      {/* Custom Context Menu */}
+      {showContextMenu && (
+        <div
+          className="fixed z-50 bg-base-100 shadow-lg rounded-md border border-base-300 p-1 text-sm"
+          style={{
+            top: `${contextMenuPosition.y}px`,
+            left: `${contextMenuPosition.x}px`,
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            onClick={handlePasteForComparison}
+            className="flex items-center w-full px-3 py-1 hover:bg-base-200 rounded"
+          >
+            <ClipboardPaste size={14} className="mr-2" />
+            Paste for Comparison
+          </button>
+        </div>
+      )}
+
+      {/* Comparison Modal */}
+      <ComparisonModal
+        isOpen={showComparisonModal}
+        onClose={() => {
+          setShowComparisonModal(false);
+          setContextMenuSelectionRange(null);
+        }}
+        originalText={comparisonData.original}
+        pastedText={comparisonData.pasted}
+        onKeepOriginal={handleKeepOriginal}
+        onKeepPasted={handleKeepPasted}
+      />
 
       {showSelectionPrompt && (
         <div
