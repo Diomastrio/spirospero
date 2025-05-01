@@ -192,14 +192,14 @@ function Browse() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
             {sortedNovels.map((novel) => (
               <Link
                 to={`/novel/${novel.id}`}
                 key={novel.id}
                 className="group bg-base-200 border border-base-300 rounded-lg overflow-hidden hover:border-primary hover:shadow-md transition-all duration-300 flex flex-col h-full"
               >
-                <div className="h-56 overflow-hidden relative">
+                <div className="h-40 overflow-hidden relative">
                   {novel.cover_image_url ? (
                     <img
                       src={novel.cover_image_url}
@@ -208,41 +208,41 @@ function Browse() {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-base-300">
-                      <Book size={36} className="opacity-40 text-primary" />
+                      <Book size={24} className="opacity-40 text-primary" />
                     </div>
                   )}
                   {novel.genre && (
-                    <div className="absolute bottom-2 right-2">
-                      <span className="px-2 py-0.5 bg-primary bg-opacity-80 text-primary-content text-xs rounded-full">
+                    <div className="absolute bottom-1 right-1">
+                      <span className="px-1.5 py-0.5 bg-primary bg-opacity-80 text-primary-content text-xs rounded-full">
                         {novel.genre}
                       </span>
                     </div>
                   )}
                 </div>
-                <div className="p-3 flex-grow flex flex-col">
-                  <div className="flex justify-between items-start gap-2 mb-2">
-                    <h3 className="text-base font-bold group-hover:text-primary transition-colors line-clamp-1">
+                <div className="p-2 flex-grow flex flex-col">
+                  <div className="flex justify-between items-start gap-1 mb-1">
+                    <h3 className="text-sm font-bold group-hover:text-primary transition-colors line-clamp-1">
                       {novel.title}
                     </h3>
-                    <BookmarkButton novelId={novel.id} size={16} />
+                    <BookmarkButton novelId={novel.id} size={14} />
                   </div>
-                  <p className="text-xs opacity-75 line-clamp-2 mb-2 flex-grow">
+                  <p className="text-xs opacity-75 line-clamp-2 mb-1 flex-grow">
                     {novel.description}
                   </p>
-                  <div className="flex justify-between items-center text-xs pt-2 border-t border-base-300">
+                  <div className="flex justify-between items-center text-xs pt-1 border-t border-base-300">
                     <div className="flex items-center">
                       <User
-                        size={14}
-                        className="mr-1 opacity-70 text-primary"
+                        size={12}
+                        className="mr-0.5 opacity-70 text-primary"
                       />
-                      <span className="truncate max-w-[80px]">
+                      <span className="truncate max-w-[60px]">
                         {novel.profiles?.nickname || "Anonymous"}
                       </span>
                     </div>
                     <div className="flex items-center">
                       <Clock
-                        size={14}
-                        className="mr-1 opacity-70 text-primary"
+                        size={12}
+                        className="mr-0.5 opacity-70 text-primary"
                       />
                       <span className="capitalize">{novel.status}</span>
                     </div>

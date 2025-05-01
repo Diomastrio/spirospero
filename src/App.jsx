@@ -21,6 +21,7 @@ import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 import Bookmarks from "./pages/Bookmark";
 import NovelDetail from "./pages/NovelDetail";
 import ChapterView from "./pages/ChapterView";
+import ImportDoc from "./pages/ImportDoc";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -58,6 +59,7 @@ function App() {
           />
           {/* Protected routes - require authentication */}
           <Route element={<ProtectedRoute />}>
+            <Route path="/import-doc" element={<ImportDoc />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/publish" element={<Publish />} />
             <Route path="/bookmarks" element={<Bookmarks />} />
