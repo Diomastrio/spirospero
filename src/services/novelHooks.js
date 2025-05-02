@@ -152,6 +152,7 @@ export function useNovel(id) {
 
 export function useUpdateNovel() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const { mutate: updateNovelMutation, isLoading } = useMutation({
     mutationFn: updateNovel,
@@ -190,6 +191,7 @@ export function useDeleteNovel() {
 
 export function usePublishNovel() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const { mutate: publishNovelMutation, isLoading: isPublishing } = useMutation(
     {

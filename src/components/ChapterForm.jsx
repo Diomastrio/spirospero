@@ -499,6 +499,11 @@ const ChapterForm = () => {
     }
   };
 
+  const countWords = (text) => {
+    if (!text || text.trim() === "") return 0;
+    return text.trim().split(/\s+/).length;
+  };
+
   const isLoading = isLoadingNovel || (isEditMode && isLoadingChapter);
   const isSaving = isCreating || isUpdating;
 
@@ -513,31 +518,50 @@ const ChapterForm = () => {
 
   const contentEditorSection =
     viewMode === "write" ? (
-      <textarea
-        id="content"
-        name="content"
-        rows={20}
-        required
-        ref={textareaRef}
-        className="w-full px-3 py-2 border border-gray-300 rounded-b-md focus:outline-none focus:ring-2 focus:ring-primary font-mono"
-        placeholder="Write your chapter content here using Markdown..."
-        value={formData.content}
-        onChange={handleChange}
-        onMouseUp={handleSelectionChange} // Use combined handler
-        onKeyUp={handleSelectionChange} // Use combined handler
-        onContextMenu={handleContextMenu} // Add context menu handler
-      />
+      <div className="flex flex-col">
+        <textarea
+          id="content"
+          name="content"
+          rows={20} // Keep base rows
+          required
+          ref={textareaRef}
+          className="w-full px-3 py-2 border border-gray-300 rounded-b-md focus:outline-none focus:ring-2 focus:ring-primary font-mono lg:min-h-[600px]" // Added lg:min-h-[600px] for height
+          placeholder="Write your chapter content here using Markdown..."
+          value={formData.content}
+          onChange={handleChange}
+          onMouseUp={handleSelectionChange} // Use combined handler
+          onKeyUp={handleSelectionChange} // Use combined handler
+          onContextMenu={handleContextMenu} // Add context menu handler
+        />
+        <div className="mt-2 flex justify-between items-center">
+          <div className="text-xs">
+            Use Markdown syntax for formatting: **bold**, *italic*,
+            [links](url), etc.
+          </div>
+          <div className="text-sm font-medium">
+            {countWords(formData.content).toLocaleString()} words
+          </div>
+        </div>
+      </div>
     ) : (
-      <div className="w-full h-[500px] overflow-y-auto border border-gray-300 rounded-b-md p-4 prose prose-lg max-w-none bg-base-100">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-          {formData.content || "Preview will appear here..."}
-        </ReactMarkdown>
+      <div className="flex flex-col">
+        <div className="w-full h-[500px] lg:h-[600px] overflow-y-auto border border-gray-300 rounded-b-md p-4 prose prose-lg max-w-none bg-base-100">
+          {" "}
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {formData.content || "Preview will appear here..."}
+          </ReactMarkdown>
+        </div>
+        <div className="mt-2 text-right text-sm font-medium">
+          {countWords(formData.content).toLocaleString()} words
+        </div>
       </div>
     );
 
   return (
     <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-4xl lg:max-w-6xl xl:max-w-7xl mx-auto">
+        {" "}
+        {/* Changed max-width */}
         <div className="mb-8">
           <Link
             to={`/novel/${novelId}/chapters`}
@@ -547,7 +571,6 @@ const ChapterForm = () => {
             Back to Chapters
           </Link>
         </div>
-
         <div className="bg-base-200 rounded-xl p-8 shadow-lg">
           <div className="flex items-center mb-6">
             <BookOpen className="mr-3 text-primary" size={24} />
@@ -705,12 +728,6 @@ const ChapterForm = () => {
 
                 {/* Editor or Preview based on mode */}
                 {contentEditorSection}
-
-                {/* Markdown Help Text */}
-                <div className="mt-2 text-xs ">
-                  Use Markdown syntax for formatting: **bold**, *italic*,
-                  [links](url), etc.
-                </div>
               </div>
 
               {/* Submit Button */}
