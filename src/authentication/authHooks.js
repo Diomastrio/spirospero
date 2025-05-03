@@ -166,7 +166,7 @@ export function useGoogleLogin() {
           toast.success("Successfully signed in with Google!");
           navigate("/home", { replace: true });
         } else {
-          throw new Error("No user data received from Google sign-in");
+          console.error("Google user data is missing:", data.user);
         }
       } catch (error) {
         console.error("Profile creation error:", error);

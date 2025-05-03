@@ -20,7 +20,6 @@ function AuthCallback() {
         // Invalidate to ensure we get fresh data
         await queryClient.invalidateQueries(["user"]);
 
-        toast.success("Successfully signed in with Google!");
         navigate("/home", { replace: true });
       } catch (error) {
         console.error("Authentication callback error:", error);

@@ -164,8 +164,22 @@ function ChapterView() {
 
           {/* Chapter Text */}
           <div className="bg-base-200 rounded-lg p-6 shadow-lg mb-8">
-            <div className="prose prose-lg max-w-none prose-headings:text-primary prose-a:text-primary">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            <div
+              className="prose prose-lg max-w-none prose-headings:text-primary prose-a:text-primary"
+              style={{ lineHeight: "1.7" }}
+            >
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  p: ({ node, children }) => {
+                    return (
+                      <p className="mb-4 pb-2 border-b border-base-300 last:border-b-0">
+                        {children}
+                      </p>
+                    );
+                  },
+                }}
+              >
                 {chapter.content || "No content available."}
               </ReactMarkdown>
             </div>
