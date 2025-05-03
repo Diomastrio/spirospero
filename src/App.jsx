@@ -22,6 +22,7 @@ import Bookmarks from "./pages/Bookmark";
 import NovelDetail from "./pages/NovelDetail";
 import ChapterView from "./pages/ChapterView";
 import ImportDoc from "./pages/ImportDoc";
+import AuthCallback from "./pages/AuthCallback";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -57,6 +58,7 @@ function App() {
             path="/novel/:novelId/chapter/:chapterId"
             element={<ChapterView />}
           />
+          <Route path="/auth/callback" element={<AuthCallback />} />
           {/* Protected routes - require authentication */}
           <Route element={<ProtectedRoute />}>
             <Route path="/import-doc" element={<ImportDoc />} />

@@ -132,3 +132,61 @@ export async function updateCurrentUser({ password, nickname }) {
 
   return await getCurrentUser();
 }
+
+export async function signInWithGoogle() {
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: `${window.location.origin}/auth/callback`, // Change to a dedicated callback route
+    },
+  });
+
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+// Add this new function to handle the callback after Google authentication
+export async function handleAuthCallback() {
+  const { data: authData } = await supabase.auth.getSession();
+
+  if (!authData.session) {
+    throw new Error("No authenticated session found");
+  }
+
+  const { data: userData } = await supabase.auth.getUser();
+
+  if (userData?.user) {
+    // Create or update profile for the Google user
+    await createUserProfileIfNeeded(userData.user);
+  }
+
+  return userData;
+}
+
+export async function createUserProfileIfNeeded(user) {
+  if (!user) return;
+
+  // Check if profile exists
+  const { data: existingProfile } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .single();
+
+  if (existingProfile) return;
+
+  // Create profile if it doesn't exist
+  const { error: profileError } = await supabase.from("profiles").insert({
+    id: user.id,
+    email: user.email,
+    nickname: user.user_metadata.full_name || user.email.split("@")[0],
+    role: "normal",
+    updated_at: new Date().toISOString(),
+    created_at: new Date().toISOString(),
+  });
+
+  if (profileError) {
+    console.error("Profile creation error:", profileError);
+    throw new Error(`Failed to create profile: ${profileError.message}`);
+  }
+}

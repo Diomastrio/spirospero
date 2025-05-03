@@ -33,3 +33,21 @@
 .commentbox .highlight {
   color: hsl(var(--p) / var(--tw-text-opacity, 1)) !important;
 }
+
+/* Add to your CSS */
+.focus-mode-transition {
+  transition: all 0.3s ease-in-out;
+}
+
+.focus-mode textarea {
+  background-color: var(--bg-base-100);
+}
+
+/* Optional: Auto-hide toolbar in focus mode */
+.focus-mode-toolbar {
+  opacity: 0.2;
+  transition: opacity 0.3s ease;
+}
+.focus-mode-toolbar:hover {
+  opacity: 1;
+}

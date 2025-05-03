@@ -1,13 +1,14 @@
 import React, { useState } from "react";
 import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useLogin } from "../authentication/authHooks";
+import { useLogin, useGoogleLogin } from "../authentication/authHooks";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const { login, isLoading } = useLogin();
+  const { googleLogin, isLoading: isGoogleLoading } = useGoogleLogin();
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -124,8 +125,12 @@ const LoginPage = () => {
             </div>
 
             <div className="mt-6">
-              <button className="w-full inline-flex justify-center py-2 px-4 border border-primary rounded-md shadow-sm  text-sm font-medium  hover:opacity-80 focus:ring-primary focus:outline-none">
-                Google
+              <button
+                onClick={() => googleLogin()}
+                disabled={isGoogleLoading}
+                className="w-full inline-flex justify-center py-2 px-4 border border-primary rounded-md shadow-sm text-sm font-medium hover:opacity-80 focus:ring-primary focus:outline-none"
+              >
+                {isGoogleLoading ? "Connecting..." : "Google"}
               </button>
             </div>
           </div>

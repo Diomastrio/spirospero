@@ -3,9 +3,11 @@ import { ChevronRight, BookOpen } from "lucide-react";
 import { Book } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useThemeStore } from "../store/useThemeStore";
+import { useUser } from "../authentication/authHooks";
 
 export default function Homepage() {
   const { setTheme, theme: currentTheme } = useThemeStore();
+  const { user } = useUser(); // Use user directly
 
   // Save current theme and set to forest when component mounts
   useEffect(() => {
@@ -18,7 +20,7 @@ export default function Homepage() {
         setTheme(previousTheme);
       }
     };
-  }, []);
+  }, []); // Removed setTheme dependency as it causes infinite loop if not memoized
 
   return (
     <main
@@ -44,13 +46,16 @@ export default function Homepage() {
             Browse Novels
             <ChevronRight size={16} className="ml-2" />
           </Link>
-          <Link
-            to="/login"
-            className="flex items-center px-4 py-2 border border-gray-600 rounded-md hover:bg-gray-700 transition"
-          >
-            Sign In
-            <BookOpen size={16} className="ml-2" />
-          </Link>
+          {/* Only show Sign In if NOT logged in */}
+          {!user && (
+            <Link
+              to="/login"
+              className="flex items-center px-4 py-2 border border-gray-600 rounded-md hover:bg-gray-700 transition"
+            >
+              Sign In
+              <BookOpen size={16} className="ml-2" />
+            </Link>
+          )}
         </div>
         <div className="mb-8 md:mb-0 mx-auto w-fit text-center p-6 rounded-lg border border-gray-800 hover:border-primary shadow-lg backdrop-blur-sm bg-black/30">
           <div className="flex items-center justify-center mb-3">

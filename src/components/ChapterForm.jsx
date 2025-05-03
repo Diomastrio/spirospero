@@ -141,6 +141,7 @@ const ChapterForm = () => {
   });
 
   const [viewMode, setViewMode] = useState("write"); // "write" or "preview"
+  const [focusMode, setFocusMode] = useState(false); // Added focus mode state
 
   const [showInspirationModal, setShowInspirationModal] = useState(false);
   const [inspirationType, setInspirationType] = useState("continue");
@@ -518,30 +519,41 @@ const ChapterForm = () => {
 
   const contentEditorSection =
     viewMode === "write" ? (
-      <div className="flex flex-col">
+      <div className={`flex flex-col ${focusMode ? "focus-mode" : ""}`}>
         <textarea
           id="content"
           name="content"
-          rows={20} // Keep base rows
+          rows={focusMode ? 30 : 20} // More rows in focus mode
           required
           ref={textareaRef}
-          className="w-full px-3 py-2 border border-gray-300 rounded-b-md focus:outline-none focus:ring-2 focus:ring-primary font-mono lg:min-h-[600px]" // Added lg:min-h-[600px] for height
-          placeholder="Write your chapter content here using Markdown..."
+          className={`w-full px-3 py-2 border ${
+            focusMode ? "border-0 shadow-none" : "border-gray-300"
+          } rounded-b-md focus:outline-none focus:ring-2 focus:ring-primary font-mono ${
+            focusMode ? "h-[80vh]" : "lg:min-h-[600px]"
+          }`}
+          placeholder={
+            focusMode
+              ? "Write freely..."
+              : "Write your chapter content here using Markdown..."
+          }
           value={formData.content}
           onChange={handleChange}
-          onMouseUp={handleSelectionChange} // Use combined handler
-          onKeyUp={handleSelectionChange} // Use combined handler
-          onContextMenu={handleContextMenu} // Add context menu handler
+          onMouseUp={handleSelectionChange}
+          onKeyUp={handleSelectionChange}
+          onContextMenu={handleContextMenu}
+          style={focusMode ? { fontSize: "1.1rem", lineHeight: "1.7" } : {}}
         />
-        <div className="mt-2 flex justify-between items-center">
-          <div className="text-xs">
-            Use Markdown syntax for formatting: **bold**, *italic*,
-            [links](url), etc.
+        {!focusMode && (
+          <div className="mt-2 flex justify-between items-center">
+            <div className="text-xs">
+              Use Markdown syntax for formatting: **bold**, *italic*,
+              [links](url), etc.
+            </div>
+            <div className="text-sm font-medium">
+              {countWords(formData.content).toLocaleString()} words
+            </div>
           </div>
-          <div className="text-sm font-medium">
-            {countWords(formData.content).toLocaleString()} words
-          </div>
-        </div>
+        )}
       </div>
     ) : (
       <div className="flex flex-col">
@@ -558,201 +570,279 @@ const ChapterForm = () => {
     );
 
   return (
-    <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl lg:max-w-6xl xl:max-w-7xl mx-auto">
-        {" "}
-        {/* Changed max-width */}
-        <div className="mb-8">
-          <Link
-            to={`/novel/${novelId}/chapters`}
-            className="flex items-center text-primary hover:underline"
-          >
-            <ArrowLeft size={18} className="mr-2" />
-            Back to Chapters
-          </Link>
-        </div>
-        <div className="bg-base-200 rounded-xl p-8 shadow-lg">
-          <div className="flex items-center mb-6">
-            <BookOpen className="mr-3 text-primary" size={24} />
-            <div>
-              <h1 className="text-2xl font-bold">
-                {isEditMode ? "Edit Chapter" : "Add New Chapter"}
-              </h1>
-              <p className="text-sm opacity-70">{novel?.title}</p>
-            </div>
-          </div>
-
-          <form onSubmit={handleSubmit}>
-            <div className="space-y-6">
-              {/* Chapter Number */}
-              <div>
-                <label
-                  htmlFor="chapter_number"
-                  className="block text-sm font-medium mb-2"
+    <div className={`min-h-screen ${focusMode ? "bg-base-100" : ""}`}>
+      {/* Only show header when not in focus mode */}
+      {!focusMode ? (
+        <>
+          <div className="py-12 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-4xl lg:max-w-6xl xl:max-w-7xl mx-auto">
+              <div className="mb-8">
+                <Link
+                  to={`/novel/${novelId}/chapters`}
+                  className="flex items-center text-primary hover:underline"
                 >
-                  Chapter Number <span className="">*</span>
-                </label>
-                <input
-                  id="chapter_number"
-                  name="chapter_number"
-                  type="number"
-                  min="1"
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                  value={formData.chapter_number}
-                  onChange={handleChange}
-                />
+                  <ArrowLeft size={18} className="mr-2" />
+                  Back to Chapters
+                </Link>
               </div>
-
-              {/* Title */}
-              <div>
-                <label
-                  htmlFor="title"
-                  className="block text-sm font-medium mb-2"
-                >
-                  Chapter Title <span className="">*</span>
-                </label>
-                <input
-                  id="title"
-                  name="title"
-                  type="text"
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                  placeholder="Chapter title"
-                  value={formData.title}
-                  onChange={handleChange}
-                />
-              </div>
-
-              {/* Content */}
-              <div>
-                <label
-                  htmlFor="content"
-                  className="block text-sm font-medium mb-2"
-                >
-                  Content <span className="">*</span>
-                </label>
-
-                {/* Markdown Toolbar */}
-                <div className="flex mb-2 space-x-2 bg-base-300 p-2 rounded-t-md">
-                  <button
-                    type="button"
-                    onClick={() => insertMarkdown("bold", "bold text")}
-                    className="p-1 hover:bg-base-100 rounded"
-                    title="Bold"
-                  >
-                    <Bold size={18} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => insertMarkdown("italic", "italic text")}
-                    className="p-1 hover:bg-base-100 rounded"
-                    title="Italic"
-                  >
-                    <Italic size={18} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => insertMarkdown("unorderedList", "list item")}
-                    className="p-1 hover:bg-base-100 rounded"
-                    title="Bullet List"
-                  >
-                    <List size={18} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => insertMarkdown("orderedList", "list item")}
-                    className="p-1 hover:bg-base-100 rounded"
-                    title="Numbered List"
-                  >
-                    <ListOrdered size={18} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => insertMarkdown("link", "link text")}
-                    className="p-1 hover:bg-base-100 rounded"
-                    title="Link"
-                  >
-                    <LinkIcon size={18} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => insertMarkdown("image", "image alt")}
-                    className="p-1 hover:bg-base-100 rounded"
-                    title="Image"
-                  >
-                    <Image size={18} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => insertMarkdown("code", "code")}
-                    className="p-1 hover:bg-base-100 rounded"
-                    title="Inline Code"
-                  >
-                    <Code size={18} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowInspirationModal(true)}
-                    className="p-1 hover:bg-base-100 rounded text-indigo-500"
-                    title="Get AI Inspiration"
-                  >
-                    <Sparkles size={18} />
-                  </button>
-                  <div className="flex-grow"></div>
-                  <div className="flex">
-                    <button
-                      type="button"
-                      onClick={() => setViewMode("write")}
-                      className={`p-1 px-2 rounded-l ${
-                        viewMode === "write"
-                          ? "bg-primary text-primary-content"
-                          : "hover:bg-base-100"
-                      }`}
-                    >
-                      <Edit size={18} className="mr-1 inline" /> Write
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setViewMode("preview")}
-                      className={`p-1 px-2 rounded-r ${
-                        viewMode === "preview"
-                          ? "bg-primary text-primary-content"
-                          : "hover:bg-base-100"
-                      }`}
-                    >
-                      <Eye size={18} className="mr-1 inline" /> Preview
-                    </button>
+              {/* Rest of the regular UI */}
+              <div className="bg-base-200 rounded-xl p-8 shadow-lg">
+                <div className="flex items-center mb-6">
+                  <BookOpen className="mr-3 text-primary" size={24} />
+                  <div>
+                    <h1 className="text-2xl font-bold">
+                      {isEditMode ? "Edit Chapter" : "Add New Chapter"}
+                    </h1>
+                    <p className="text-sm opacity-70">{novel?.title}</p>
                   </div>
                 </div>
 
-                {/* Editor or Preview based on mode */}
-                {contentEditorSection}
-              </div>
+                <form onSubmit={handleSubmit}>
+                  <div className="space-y-6">
+                    {/* Chapter Number */}
+                    <div>
+                      <label
+                        htmlFor="chapter_number"
+                        className="block text-sm font-medium mb-2"
+                      >
+                        Chapter Number <span className="">*</span>
+                      </label>
+                      <input
+                        id="chapter_number"
+                        name="chapter_number"
+                        type="number"
+                        min="1"
+                        required
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                        value={formData.chapter_number}
+                        onChange={handleChange}
+                      />
+                    </div>
 
-              {/* Submit Button */}
-              <div className="flex justify-end">
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className={`btn btn-primary px-6 ${
-                    isSaving ? "loading" : ""
-                  }`}
-                >
-                  {isSaving
-                    ? isEditMode
-                      ? "Saving..."
-                      : "Creating..."
-                    : isEditMode
-                    ? "Save Changes"
-                    : "Create Chapter"}
-                </button>
+                    {/* Title */}
+                    <div>
+                      <label
+                        htmlFor="title"
+                        className="block text-sm font-medium mb-2"
+                      >
+                        Chapter Title <span className="">*</span>
+                      </label>
+                      <input
+                        id="title"
+                        name="title"
+                        type="text"
+                        required
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                        placeholder="Chapter title"
+                        value={formData.title}
+                        onChange={handleChange}
+                      />
+                    </div>
+
+                    {/* Content */}
+                    <div>
+                      <label
+                        htmlFor="content"
+                        className="block text-sm font-medium mb-2"
+                      >
+                        Content <span className="">*</span>
+                      </label>
+
+                      {/* Markdown Toolbar */}
+                      <div className="flex mb-2 space-x-2 bg-base-300 p-2 rounded-t-md">
+                        <button
+                          type="button"
+                          onClick={() => insertMarkdown("bold", "bold text")}
+                          className="p-1 hover:bg-base-100 rounded"
+                          title="Bold"
+                        >
+                          <Bold size={18} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            insertMarkdown("italic", "italic text")
+                          }
+                          className="p-1 hover:bg-base-100 rounded"
+                          title="Italic"
+                        >
+                          <Italic size={18} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            insertMarkdown("unorderedList", "list item")
+                          }
+                          className="p-1 hover:bg-base-100 rounded"
+                          title="Bullet List"
+                        >
+                          <List size={18} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            insertMarkdown("orderedList", "list item")
+                          }
+                          className="p-1 hover:bg-base-100 rounded"
+                          title="Numbered List"
+                        >
+                          <ListOrdered size={18} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => insertMarkdown("link", "link text")}
+                          className="p-1 hover:bg-base-100 rounded"
+                          title="Link"
+                        >
+                          <LinkIcon size={18} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => insertMarkdown("image", "image alt")}
+                          className="p-1 hover:bg-base-100 rounded"
+                          title="Image"
+                        >
+                          <Image size={18} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => insertMarkdown("code", "code")}
+                          className="p-1 hover:bg-base-100 rounded"
+                          title="Inline Code"
+                        >
+                          <Code size={18} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowInspirationModal(true)}
+                          className="p-1 hover:bg-base-100 rounded text-indigo-500"
+                          title="Get AI Inspiration"
+                        >
+                          <Sparkles size={18} />
+                        </button>
+                        <div className="flex-grow"></div>
+                        <button
+                          type="button"
+                          onClick={() => setFocusMode(!focusMode)}
+                          className={`p-1 px-2 mr-2 rounded ${
+                            focusMode
+                              ? "bg-primary text-primary-content"
+                              : "hover:bg-base-100"
+                          }`}
+                          title={
+                            focusMode ? "Exit focus mode" : "Enter focus mode"
+                          }
+                        >
+                          {focusMode ? (
+                            <Eye size={18} className="inline" />
+                          ) : (
+                            <Eye size={18} className="inline" />
+                          )}
+                          {!focusMode && <span className="ml-1">Focus</span>}
+                        </button>
+                        <div className="flex">
+                          <button
+                            type="button"
+                            onClick={() => setViewMode("write")}
+                            className={`p-1 px-2 rounded-l ${
+                              viewMode === "write"
+                                ? "bg-primary text-primary-content"
+                                : "hover:bg-base-100"
+                            }`}
+                          >
+                            <Edit size={18} className="mr-1 inline" /> Write
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setViewMode("preview")}
+                            className={`p-1 px-2 rounded-r ${
+                              viewMode === "preview"
+                                ? "bg-primary text-primary-content"
+                                : "hover:bg-base-100"
+                            }`}
+                          >
+                            <Eye size={18} className="mr-1 inline" /> Preview
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Editor or Preview based on mode */}
+                      {contentEditorSection}
+                    </div>
+
+                    {/* Submit Button */}
+                    <div className="flex justify-end">
+                      <button
+                        type="submit"
+                        disabled={isSaving}
+                        className={`btn btn-primary px-6 ${
+                          isSaving ? "loading" : ""
+                        }`}
+                      >
+                        {isSaving
+                          ? isEditMode
+                            ? "Saving..."
+                            : "Creating..."
+                          : isEditMode
+                          ? "Save Changes"
+                          : "Create Chapter"}
+                      </button>
+                    </div>
+                  </div>
+                </form>
               </div>
             </div>
-          </form>
-        </div>
-      </div>
+          </div>
+        </>
+      ) : (
+        // Simplified UI for focus mode
+        <div className="fixed inset-0 flex flex-col bg-base-100 z-50">
+          {/* Minimal header for focus mode */}
+          <div className="p-4 bg-base-100 shadow-sm flex justify-between items-center">
+            <h2 className="text-xl font-medium">
+              {formData.title || "Writing..."}
+            </h2>
+            <div className="flex items-center gap-3">
+              <div className="text-sm opacity-70">
+                {countWords(formData.content).toLocaleString()} words
+              </div>
+              <button
+                onClick={() => setFocusMode(false)}
+                className="btn btn-sm"
+                title="Exit focus mode"
+              >
+                Exit Focus Mode
+              </button>
+            </div>
+          </div>
 
+          {/* Just the editor in focus mode */}
+          <div className="flex-grow p-4 mx-auto w-full max-w-4xl">
+            {viewMode === "write" ? (
+              <textarea
+                id="content-focus"
+                name="content"
+                className="w-full h-full p-6 text-lg border-none focus:outline-none focus:ring-0 bg-base-100 font-serif"
+                value={formData.content}
+                onChange={handleChange}
+                onKeyUp={handleSelectionChange}
+                placeholder="Start writing..."
+                ref={textareaRef}
+                style={{ lineHeight: "1.7" }}
+              />
+            ) : (
+              // Preview in focus mode
+              <div className="w-full h-full overflow-y-auto p-6 prose prose-lg max-w-none">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {formData.content || "Preview will appear here..."}
+                </ReactMarkdown>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Always include modals regardless of mode */}
       {showInspirationModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
           <div className="bg-base-100 rounded-lg max-w-xl w-full max-h-[80vh] flex flex-col">

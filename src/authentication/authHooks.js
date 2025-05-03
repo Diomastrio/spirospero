@@ -1,12 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
+import React, { useEffect } from "react"; // Import useEffect
 import {
   login as loginApi,
   getCurrentUser,
   updateCurrentUser,
   logout as logoutApi,
   signup as signupApi,
+  signInWithGoogle,
+  createUserProfileIfNeeded, // Import the function
 } from "../services/apiAuth";
 
 export function useLogin() {
@@ -31,16 +34,38 @@ export function useLogin() {
 }
 
 export function useUser() {
-  const { isLoading, data: user } = useQuery({
+  const {
+    isLoading,
+    data: user,
+    isSuccess,
+  } = useQuery({
+    // Add isSuccess
     queryKey: ["user"],
     queryFn: getCurrentUser,
+    retry: false, // Optional: prevent retrying if user is null initially
   });
+
+  // Effect to create profile if needed after user data is fetched
+  useEffect(() => {
+    if (isSuccess && user) {
+      // Check if the user object has the structure returned by getCurrentUser
+      const authUser = user.user; // Access the nested user object from Supabase auth
+      if (authUser) {
+        createUserProfileIfNeeded(authUser).catch((error) => {
+          console.error("Failed to create profile:", error);
+          // Optionally show a toast error
+          // toast.error("Failed to initialize user profile.");
+        });
+      }
+    }
+  }, [user, isSuccess]); // Depend on user data and success status
 
   return {
     isLoading,
+    // Return the combined profile and auth user object as before
     user,
-    isAuthenticated: user?.role === "authenticated",
-    isAdmin: user?.role === "admin", // Fix: user.role instead of user.user_metadata.rol
+    isAuthenticated: user?.role === "authenticated", // Check role on the profile part
+    isAdmin: user?.role === "admin",
   };
 }
 
@@ -106,4 +131,53 @@ export function useSignup() {
   });
 
   return { signup, isLoading };
+}
+
+export function useGoogleLogin() {
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+
+  const { mutate: googleLogin, isLoading } = useMutation({
+    mutationFn: signInWithGoogle,
+    onSuccess: async (data) => {
+      try {
+        // 1. First update query cache with basic user data
+        queryClient.setQueryData(["user"], data.user);
+
+        // 2. Create profile if needed - wait for this to complete
+        if (data.user) {
+          console.log("Creating profile for Google user:", data.user);
+          await createUserProfileIfNeeded({
+            id: data.user.id,
+            email: data.user.email,
+            user_metadata: {
+              full_name:
+                data.user.user_metadata?.name ||
+                data.user.user_metadata?.full_name ||
+                "",
+              avatar_url: data.user.user_metadata?.avatar_url || "",
+            },
+          });
+
+          // 3. Invalidate and refetch to get complete user data with profile
+          await queryClient.invalidateQueries(["user"]);
+
+          // 4. Success message and navigation
+          toast.success("Successfully signed in with Google!");
+          navigate("/home", { replace: true });
+        } else {
+          throw new Error("No user data received from Google sign-in");
+        }
+      } catch (error) {
+        console.error("Profile creation error:", error);
+        toast.error(`Error setting up profile: ${error.message}`);
+      }
+    },
+    onError: (err) => {
+      console.error("Google login error:", err);
+      toast.error("Error authenticating with Google");
+    },
+  });
+
+  return { googleLogin, isLoading };
 }
