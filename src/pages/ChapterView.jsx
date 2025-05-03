@@ -9,19 +9,24 @@ import {
   ChevronLeft,
   ChevronRight,
   BookOpen,
-  MessageCircle, // Optional: Add this icon for comments section header
+  BookOpenCheck,
+  MessageCircle,
+  ArrowUp,
+  LayoutDashboard,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import supabase from "../services/supabaseClient";
 import { useThemeStore } from "../store/useThemeStore";
-import CommentBox from "../components/CommentBox"; // Import CommentBox component
+import CommentBox from "../components/CommentBox";
+import { useUser } from "../authentication/authHooks"; // Import useUser hook
 
 function ChapterView() {
   const { novelId, chapterId } = useParams();
   const navigate = useNavigate();
   const { setTheme, theme: currentTheme } = useThemeStore();
+  const { isAdmin } = useUser(); // Get admin status from useUser hook
 
   // Save current theme and set to forest when component mounts
   useEffect(() => {
@@ -143,11 +148,13 @@ function ChapterView() {
 
           <div className="flex items-center space-x-4">
             <Link to="/browse" className="hover:text-primary">
-              <Home size={20} />
+              <BookOpen size={20} />
             </Link>
-            <Link to="/dashboard" className="hover:text-primary">
-              <Book size={20} />
-            </Link>
+            {isAdmin && (
+              <Link to="/dashboard" className="hover:text-primary">
+                <LayoutDashboard size={20} />
+              </Link>
+            )}
           </div>
         </div>
       </header>
@@ -224,7 +231,7 @@ function ChapterView() {
           {/* Chapter Selection */}
           <div className="mt-8">
             <div className="flex items-center mb-4">
-              <BookOpen size={18} className="mr-2" />
+              <BookOpenCheck size={18} className="mr-2" />
               <h3 className="text-lg font-semibold">Chapters</h3>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
@@ -246,6 +253,15 @@ function ChapterView() {
           </div>
         </div>
       </main>
+
+      {/* Scroll to top button */}
+      <button
+        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        className="fixed bottom-6 right-6 bg-primary text-primary-content p-2 rounded-full shadow-lg hover:bg-primary-focus transition-colors duration-300"
+        aria-label="Scroll to top"
+      >
+        <ArrowUp size={20} />
+      </button>
     </div>
   );
 }

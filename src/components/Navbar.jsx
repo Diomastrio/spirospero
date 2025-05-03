@@ -15,7 +15,8 @@ import {
   AlertCircle,
   EyeOff,
   Eye,
-  Bookmark, // Import Bookmark icon
+  Bookmark,
+  CheckCircle,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import ThemeSelector from "./ThemeSelector";
@@ -40,6 +41,13 @@ export default function Navbar() {
   );
   const [remainingTime, setRemainingTime] = useState(timerDuration);
   const [showTimerDisplay, setShowTimerDisplay] = useState(false);
+
+  // Modal state
+  const [showTimerModal, setShowTimerModal] = useState(false);
+  const [modalDurationMinutes, setModalDurationMinutes] = useState(
+    DEFAULT_DURATION_MINUTES
+  );
+  const [modalMessage, setModalMessage] = useState(DEFAULT_MESSAGE);
 
   // Custom message and toast visibility state
   const [timerMessage, setTimerMessage] = useState(DEFAULT_MESSAGE);
@@ -124,52 +132,31 @@ export default function Navbar() {
       setShowTimerDisplay(false);
       setRemainingTime(timerDuration); // Reset to the last set duration
     } else {
-      // Get saved duration as default
-      const savedDurationMinutes = Math.floor(timerDuration / 60);
-
-      // Start the timer: Prompt for duration first
-      const durationInput = prompt(
-        `Enter timer duration in minutes:`,
-        savedDurationMinutes.toString()
-      );
-
-      if (durationInput === null) return; // User cancelled
-
-      const durationMinutes = parseInt(durationInput, 10);
-      if (isNaN(durationMinutes) || durationMinutes <= 0) {
-        alert("Invalid duration. Please enter a positive number.");
-        return;
-      }
-
-      const newDurationSeconds = durationMinutes * 60;
-      setTimerDuration(newDurationSeconds);
-      setRemainingTime(newDurationSeconds);
-
-      // Get saved message as default
-      const savedMessage =
-        localStorage.getItem("timerMessage") || DEFAULT_MESSAGE;
-
-      // Prompt for custom message
-      const message = prompt(
-        "Enter a message to show when timer completes:",
-        savedMessage
-      );
-
-      if (message !== null) {
-        setTimerMessage(message);
-        setTimerActive(true);
-        setTimerPaused(false);
-        setShowTimerDisplay(true);
-        setShowToast(false);
-
-        // Save the new preferences
-        saveTimerPreferences(newDurationSeconds, message);
-      }
+      // Show the modal instead of prompting
+      setModalDurationMinutes(Math.floor(timerDuration / 60));
+      setModalMessage(timerMessage);
+      setShowTimerModal(true);
     }
   };
 
-  const togglePause = () => {
-    setTimerPaused((prevPaused) => !prevPaused);
+  const startTimerFromModal = () => {
+    if (isNaN(modalDurationMinutes) || modalDurationMinutes <= 0) {
+      alert("Please enter a valid duration.");
+      return;
+    }
+
+    const newDurationSeconds = modalDurationMinutes * 60;
+    setTimerDuration(newDurationSeconds);
+    setRemainingTime(newDurationSeconds);
+    setTimerMessage(modalMessage);
+    setTimerActive(true);
+    setTimerPaused(false);
+    setShowTimerDisplay(true);
+    setShowToast(false);
+    setShowTimerModal(false);
+
+    // Save the new preferences
+    saveTimerPreferences(newDurationSeconds, modalMessage);
   };
 
   // Format time as MM:SS
@@ -253,14 +240,16 @@ export default function Navbar() {
               {isAdmin ? "Dashboard" : "Publish"}
             </Link>
           )}
-          <Link
-            to="/import-doc"
-            className={`text-primary hover:opacity-80 ${isActive(
-              "/import-doc"
-            )}`}
-          >
-            Import Novel
-          </Link>
+          {isAdmin && (
+            <Link
+              to="/import-doc"
+              className={`text-primary hover:opacity-80 ${isActive(
+                "/import-doc"
+              )}`}
+            >
+              Import Novel
+            </Link>
+          )}
         </div>
       </div>
 
@@ -269,14 +258,16 @@ export default function Navbar() {
         {/* Show theme selector only if not on home page */}
         {!isHomePage && <ThemeSelector />}
 
-        {/* Timer button - Updated logic */}
+        {/* Timer button */}
         <button
           className="p-2 hover:bg-gray-800 rounded-full relative"
           onClick={() => {
             if (isTimerHidden) {
               setShowTimerDisplay(true); // Just show the display if hidden
+            } else if (timerActive) {
+              toggleTimer(); // If timer is active, stop it
             } else {
-              toggleTimer(); // Otherwise, toggle start/stop
+              setShowTimerModal(true); // Otherwise show settings modal
             }
           }}
           title={
@@ -284,7 +275,7 @@ export default function Navbar() {
               ? "Show timer display"
               : timerActive
               ? "Stop timer"
-              : "Start timer"
+              : "Set timer"
           }
         >
           {isTimerHidden ? (
@@ -318,9 +309,16 @@ export default function Navbar() {
           </Link>
           <button
             onClick={handleLogout}
-            className="p-2 hover:bg-gray-800 rounded-full"
+            className="group flex items-center p-2 hover:bg-gray-800 rounded-full overflow-hidden transition-all duration-300 ease-in-out"
+            title="Sign out"
           >
-            <LogOut size={20} />
+            <LogOut
+              size={20}
+              className="group-hover:text-red-500 transition-colors duration-300"
+            />
+            <span className="w-0 group-hover:w-16 overflow-hidden whitespace-nowrap transition-all duration-300 ease-in-out opacity-0 group-hover:opacity-100 ml-0 group-hover:ml-2">
+              Sign out
+            </span>
           </button>
         </div>
 
@@ -387,8 +385,10 @@ export default function Navbar() {
                   setMobileMenuOpen(false); // Close menu first
                   if (isTimerHidden) {
                     setShowTimerDisplay(true);
-                  } else {
+                  } else if (timerActive) {
                     toggleTimer();
+                  } else {
+                    setShowTimerModal(true);
                   }
                 }}
                 className="p-2 hover:bg-gray-800 rounded-full"
@@ -397,7 +397,7 @@ export default function Navbar() {
                     ? "Show timer display"
                     : timerActive
                     ? "Stop timer"
-                    : "Start timer"
+                    : "Set timer"
                 }
               >
                 {isTimerHidden ? (
@@ -414,9 +414,16 @@ export default function Navbar() {
                   setMobileMenuOpen(false);
                   handleLogout();
                 }}
-                className="p-2 hover:bg-gray-800 rounded-full"
+                className="group flex items-center p-2 hover:bg-gray-800 rounded-full overflow-hidden transition-all duration-300 ease-in-out"
+                title="Sign out"
               >
-                <LogOut size={20} />
+                <LogOut
+                  size={20}
+                  className="group-hover:text-red-500 transition-colors duration-300"
+                />
+                <span className="w-0 group-hover:w-16 overflow-hidden whitespace-nowrap transition-all duration-300 ease-in-out opacity-0 group-hover:opacity-100 ml-0 group-hover:ml-2">
+                  Sign out
+                </span>
               </button>
             </div>
           </div>
@@ -470,6 +477,72 @@ export default function Navbar() {
           >
             <X size={16} />
           </button>
+        </div>
+      )}
+
+      {/* Timer Settings Modal */}
+      {showTimerModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-base-200 rounded-lg shadow-lg p-5 max-w-md w-full mx-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold flex items-center">
+                <Timer size={18} className="mr-2 text-primary" />
+                Timer Settings
+              </h3>
+              <button
+                onClick={() => setShowTimerModal(false)}
+                className="p-1 hover:bg-base-300 rounded-full"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text">Duration (minutes)</span>
+                </label>
+                <input
+                  type="number"
+                  value={modalDurationMinutes}
+                  onChange={(e) =>
+                    setModalDurationMinutes(parseInt(e.target.value) || 0)
+                  }
+                  className="input input-bordered w-full"
+                  min="1"
+                />
+              </div>
+
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text">Timer Completion Message</span>
+                </label>
+                <input
+                  type="text"
+                  value={modalMessage}
+                  onChange={(e) => setModalMessage(e.target.value)}
+                  className="input input-bordered w-full"
+                  placeholder="Message to show when timer completes"
+                />
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => setShowTimerModal(false)}
+                className="btn btn-ghost mr-2"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={startTimerFromModal}
+                className="btn btn-primary flex items-center"
+              >
+                <CheckCircle size={18} className="mr-2" />
+                Start Timer
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </nav>
