@@ -18,6 +18,7 @@ import {
   ClipboardPaste, // Added
   Check, // Added
   Copy, // Added
+  AlignJustify, // Add this for paragraph spacing icon
 } from "lucide-react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
@@ -30,7 +31,6 @@ import {
 } from "../services/chapterHooks";
 import { getWritingInspiration } from "../services/geminiService";
 import { toast } from "react-hot-toast";
-
 // *** NEW: Comparison Modal Component ***
 const ComparisonModal = ({
   isOpen,
@@ -243,6 +243,16 @@ const ChapterForm = () => {
       case "code":
         insertion = `\`${selectedText}\``;
         break;
+      case "paragraphSpacing":
+        // Format the entire text with proper paragraph spacing
+        const formattedText = text.replace(/([^\n])\n([^\n])/g, "$1\n\n$2");
+        setFormData((prev) => ({ ...prev, content: formattedText }));
+        setTimeout(() => {
+          textarea.focus();
+          textarea.setSelectionRange(start, start);
+        }, 0);
+        toast.success("Paragraph spacing applied");
+        return; // Exit early since we're handling the state update differently
       default:
         insertion = selectedText;
     }
@@ -711,6 +721,14 @@ const ChapterForm = () => {
                           title="Inline Code"
                         >
                           <Code size={18} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => insertMarkdown("paragraphSpacing")}
+                          className="p-1 hover:bg-base-100 rounded"
+                          title="Format Paragraph Spacing"
+                        >
+                          <AlignJustify size={18} />
                         </button>
                         <button
                           type="button"
