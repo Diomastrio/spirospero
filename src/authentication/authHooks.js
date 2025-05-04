@@ -1,16 +1,16 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react"; // Import useEffect
 import {
   login as loginApi,
+  getCurrentUser,
   updateCurrentUser,
   logout as logoutApi,
   signup as signupApi,
   signInWithGoogle,
-  createUserProfileIfNeeded,
+  createUserProfileIfNeeded, // Import the function
 } from "../services/apiAuth";
-import supabase from "../services/supabaseClient";
 
 export function useLogin() {
   const queryClient = useQueryClient();
@@ -18,14 +18,8 @@ export function useLogin() {
 
   const { mutate: login, isLoading } = useMutation({
     mutationFn: ({ email, password }) => loginApi({ email, password }),
-    onSuccess: async (data) => {
-      // First set the basic user data we have
-      queryClient.setQueryData(["user"], data.user);
-
-      // Then invalidate the query to force a refetch with complete profile data
-      await queryClient.invalidateQueries(["user"]);
-
-      // Only navigate after we have the complete data
+    onSuccess: (user) => {
+      queryClient.setQueryData(["user"], user.user);
       navigate("/home", { replace: true });
     },
     onError: (err) => {
@@ -40,67 +34,39 @@ export function useLogin() {
 }
 
 export function useUser() {
-  const [userState, setUserState] = useState({
-    user: null,
-    isAdmin: false,
-    isLoading: true,
+  const {
+    isLoading,
+    data: user,
+    isSuccess,
+  } = useQuery({
+    // Add isSuccess
+    queryKey: ["user"],
+    queryFn: getCurrentUser,
+    retry: false, // Optional: prevent retrying if user is null initially
   });
 
+  // Effect to create profile if needed after user data is fetched
   useEffect(() => {
-    // Subscribe to auth state changes
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setUserState((prev) => ({ ...prev, isLoading: true }));
-
-        if (session) {
-          try {
-            // Fetch the complete user profile
-            const { data: profile } = await supabase
-              .from("profiles")
-              .select("*")
-              .eq("id", session.user.id)
-              .single();
-
-            setUserState({
-              user: { ...session.user, ...profile },
-              isAdmin: profile?.role === "admin",
-              isLoading: false,
-            });
-          } catch (error) {
-            console.error("Error fetching profile:", error);
-            setUserState({
-              user: session.user,
-              isAdmin: false,
-              isLoading: false,
-            });
-          }
-        } else {
-          setUserState({
-            user: null,
-            isAdmin: false,
-            isLoading: false,
-          });
-        }
+    if (isSuccess && user) {
+      // Check if the user object has the structure returned by getCurrentUser
+      const authUser = user.user; // Access the nested user object from Supabase auth
+      if (authUser) {
+        createUserProfileIfNeeded(authUser).catch((error) => {
+          console.error("Failed to create profile:", error);
+          // Optionally show a toast error
+          // toast.error("Failed to initialize user profile.");
+        });
       }
-    );
+    }
+  }, [user, isSuccess]); // Depend on user data and success status
 
-    // Initial fetch of user data
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
-        setUserState({ user: null, isAdmin: false, isLoading: false });
-        return;
-      }
-
-      // We already have the listener set up to handle this
-    });
-
-    // Clean up subscription
-    return () => {
-      if (authListener?.subscription) authListener.subscription.unsubscribe();
-    };
-  }, []);
-
-  return userState;
+  return {
+    isLoading,
+    // Return the combined profile and auth user object as before
+    user,
+    isAuthenticated: user?.role === "authenticated", // Check role on the profile part
+    isAdmin: user?.role === "admin",
+  };
 }
 
 export function useUpdateUser() {
