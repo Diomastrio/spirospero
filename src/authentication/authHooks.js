@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
-import React, { useEffect, useState } from "react"; // Import useEffect and useState
+import React, { useEffect, useState } from "react";
 import {
   login as loginApi,
   updateCurrentUser,
@@ -10,7 +10,7 @@ import {
   signInWithGoogle,
   createUserProfileIfNeeded,
 } from "../services/apiAuth";
-import { supabase } from "../services/supabaseClient"; // Import supabase client
+import supabase from "../services/supabaseClient";
 
 export function useLogin() {
   const queryClient = useQueryClient();
