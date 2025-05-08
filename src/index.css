@@ -51,3 +51,15 @@
 .focus-mode-toolbar:hover {
   opacity: 1;
 }
+
+/* Example for OpenDyslexic */
+@font-face {
+  font-family: "OpenDyslexic";
+  src: url("/fonts/OpenDyslexic-Regular.woff2") format("woff2"),
+    /* Adjust path as needed */ url("/fonts/OpenDyslexic-Regular.woff")
+      format("woff"); /* Adjust path as needed */
+  font-weight: normal;
+  font-style: normal;
+}
+
+/* You might want to add bold, italic versions too */

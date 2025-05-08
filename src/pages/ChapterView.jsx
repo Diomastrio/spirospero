@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react"; // Import useState
 import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -19,14 +19,29 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import supabase from "../services/supabaseClient";
 import { useThemeStore } from "../store/useThemeStore";
-import CommentBox from "../components/CommentBox";
 import { useUser } from "../authentication/authHooks"; // Import useUser hook
+import CustomFontDropdown from "../components/CustomFontDropdown"; // Adjust path if necessary
+import CommentBox from "../components/CommentBox"; // Adjust path if necessary
 
 function ChapterView() {
   const { novelId, chapterId } = useParams();
   const navigate = useNavigate();
   const { setTheme, theme: currentTheme } = useThemeStore();
   const { isAdmin } = useUser(); // Get admin status from useUser hook
+
+  // Define font options
+  const fontOptions = [
+    { name: "Default", value: "inherit" }, // Or your base font
+    { name: "Serif", value: "Georgia, serif" },
+    { name: "Sans-Serif", value: "Arial, sans-serif" },
+    { name: "Monospace", value: "Courier New, monospace" },
+    { name: "OpenDyslexic", value: "OpenDyslexic, sans-serif" }, // Example custom font
+    { name: "Cinzel", value: "Cinzel, serif" }, // Example
+    { name: "MedievalSharp", value: "MedievalSharp, cursive" }, // Example
+  ];
+
+  // State for selected font
+  const [selectedFont, setSelectedFont] = useState(fontOptions[0].value);
 
   // Save current theme and set to forest when component mounts
   useEffect(() => {
@@ -146,7 +161,18 @@ function ChapterView() {
             </h2>
           </div>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-4">
+            {/* Font Selector */}
+            <div className="form-control w-32 sm:w-36">
+              {" "}
+              {/* Adjust width as needed */}
+              <CustomFontDropdown
+                options={fontOptions}
+                selectedOptionValue={selectedFont}
+                onChange={setSelectedFont}
+                placeholder="Font"
+              />
+            </div>
             <Link to="/browse" className="hover:text-primary">
               <BookOpen size={20} />
             </Link>
@@ -170,7 +196,10 @@ function ChapterView() {
           </div>
 
           {/* Chapter Text */}
-          <div className="bg-base-200 rounded-lg p-6 shadow-lg mb-8">
+          <div
+            className="bg-base-200 rounded-lg p-6 shadow-lg mb-8"
+            style={{ fontFamily: selectedFont }} // Apply selected font here
+          >
             <div
               className="prose prose-lg max-w-none prose-headings:text-primary prose-a:text-primary"
               style={{ lineHeight: "1.7" }}

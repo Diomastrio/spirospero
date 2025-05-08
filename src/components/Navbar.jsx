@@ -159,6 +159,10 @@ export default function Navbar() {
     saveTimerPreferences(newDurationSeconds, modalMessage);
   };
 
+  const togglePause = () => {
+    setTimerPaused(!timerPaused);
+  };
+
   // Format time as MM:SS
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
