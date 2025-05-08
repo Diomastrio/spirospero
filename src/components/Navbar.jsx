@@ -259,12 +259,11 @@ export default function Navbar() {
 
       {/* Right side icons - rearranged for mobile */}
       <div className="flex items-center space-x-2 md:space-x-4">
-        {/* Show theme selector only if not on home page */}
         {!isHomePage && <ThemeSelector />}
 
         {/* Timer button */}
         <button
-          className="p-2 hover:bg-gray-800 rounded-full relative"
+          className="p-2 btn btn-ghost btn-circle rounded-full relative"
           onClick={() => {
             if (isTimerHidden) {
               setShowTimerDisplay(true); // Just show the display if hidden
@@ -292,7 +291,7 @@ export default function Navbar() {
         {/* Save default theme button */}
         <button
           onClick={saveDefaultTheme}
-          className="p-2 hover:bg-gray-800 rounded-full"
+          className="p-2 btn btn-ghost btn-circle rounded-full"
           title="Save current theme as default"
         >
           <Bookmark size={20} />
@@ -300,12 +299,12 @@ export default function Navbar() {
 
         {/* Desktop-only buttons */}
         <div className="hidden md:flex md:items-center md:space-x-4">
-          <button className="p-2 hover:bg-gray-800 rounded-full">
+          <button className="p-2 btn btn-ghost btn-circle rounded-full">
             <Bell size={20} />
           </button>
           <Link
             to="/profile"
-            className={`p-2 hover:bg-gray-800 rounded-full ${
+            className={`p-2 btn btn-ghost btn-circle rounded-full ${
               isActive("/profile") ? "bg-gray-700" : ""
             }`}
           >
@@ -313,7 +312,7 @@ export default function Navbar() {
           </Link>
           <button
             onClick={handleLogout}
-            className="group flex items-center p-2 hover:bg-gray-800 rounded-full overflow-hidden transition-all duration-300 ease-in-out"
+            className="group flex items-center p-2 btn btn-ghost rounded-full overflow-hidden transition-all duration-300 ease-in-out"
             title="Sign out"
           >
             <LogOut

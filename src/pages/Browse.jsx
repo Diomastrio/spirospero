@@ -12,14 +12,16 @@ import {
 } from "lucide-react";
 import supabase from "../services/supabaseClient";
 import BookmarkButton from "../components/BookmarkButton";
+import CustomFontDropdown from "../components/CustomFontDropdown"; // Import the custom dropdown
 
 function Browse() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedGenre, setSelectedGenre] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
   const [genres, setGenres] = useState([]);
-  const [sortOrder, setSortOrder] = useState("");
+  const [sortOrder, setSortOrder] = useState(""); // Default to "latest" by value
   const [searchOpen, setSearchOpen] = useState(false);
+
   // Fetch published novels
   const { data: novels, isLoading } = useQuery({
     queryKey: ["publishedNovels"],
@@ -40,7 +42,6 @@ function Browse() {
     },
   });
 
-  // Extract unique genres for filter
   useEffect(() => {
     if (novels) {
       const uniqueGenres = [
@@ -49,6 +50,24 @@ function Browse() {
       setGenres(uniqueGenres);
     }
   }, [novels]);
+
+  // Prepare options for dropdowns
+  const genreOptions = [
+    { name: "All Genres", value: "" },
+    ...genres.map((genre) => ({ name: genre, value: genre })),
+  ];
+
+  const statusOptions = [
+    { name: "All Status", value: "" },
+    { name: "Ongoing", value: "ongoing" },
+    { name: "Completed", value: "completed" },
+    { name: "On Hiatus", value: "hiatus" },
+  ];
+
+  const sortOptions = [
+    { name: "Latest", value: "" }, // Default sort
+    { name: "Oldest", value: "oldest" },
+  ];
 
   // Filter novels based on search and filters
   const filteredNovels = novels?.filter((novel) => {
@@ -107,7 +126,7 @@ function Browse() {
                 />
               </div>
               <button
-                className={`h-10 w-10 flex items-center justify-center rounded-full bg-primary text-primary-content ${
+                className={`h-10 w-10 flex items-center hover:bg-opacity-60 justify-center rounded-full bg-primary text-primary-content ${
                   searchOpen ? "ml-1" : ""
                 }`}
                 onClick={() => {
@@ -123,53 +142,29 @@ function Browse() {
           {/* Filters - Wrap on smaller screens */}
           <div className="flex flex-wrap gap-2 md:gap-3">
             <div className="relative w-full sm:w-auto flex-1">
-              <select
-                className="select select-bordered w-full rounded-xl pl-10 pr-3 py-2 appearance-none bg-base-100"
-                value={selectedGenre}
-                onChange={(e) => setSelectedGenre(e.target.value)}
-              >
-                <option value="">All Genres</option>
-                {genres.map((genre) => (
-                  <option key={genre} value={genre}>
-                    {genre}
-                  </option>
-                ))}
-              </select>
-              <BookOpen
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-primary"
-                size={18}
+              <CustomFontDropdown
+                options={genreOptions}
+                selectedOptionValue={selectedGenre}
+                onChange={setSelectedGenre}
+                placeholder="All Genres"
               />
             </div>
 
             <div className="relative w-full sm:w-auto flex-1">
-              <select
-                className="select select-bordered w-full rounded-xl pl-10 pr-5 py-2 appearance-none bg-base-100"
-                value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
-              >
-                <option value="">All Status</option>
-                <option value="ongoing">Ongoing</option>
-                <option value="completed">Completed</option>
-                <option value="hiatus">On Hiatus</option>
-              </select>
-              <Filter
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-primary"
-                size={18}
+              <CustomFontDropdown
+                options={statusOptions}
+                selectedOptionValue={selectedStatus}
+                onChange={setSelectedStatus}
+                placeholder="All Status"
               />
             </div>
 
             <div className="relative w-full sm:w-auto flex-1">
-              <select
-                className="select select-bordered w-full rounded-xl pl-10 pr-3 py-2 appearance-none bg-base-100"
-                onChange={(e) => setSortOrder(e.target.value)}
-                defaultValue=""
-              >
-                <option value="">Latest</option>
-                <option value="oldest">Oldest</option>
-              </select>
-              <Clock
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-primary"
-                size={18}
+              <CustomFontDropdown
+                options={sortOptions}
+                selectedOptionValue={sortOrder}
+                onChange={setSortOrder}
+                placeholder="Latest"
               />
             </div>
           </div>
