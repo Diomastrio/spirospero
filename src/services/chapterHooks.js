@@ -2,6 +2,7 @@ import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import supabase from "./supabaseClient";
+import { v4 as uuidv4 } from "uuid"; // Add this import
 
 // Chapter API functions
 async function createChapter({
@@ -66,6 +67,38 @@ async function deleteChapter(id) {
 
   if (error) throw new Error(error.message);
   return { id };
+}
+
+// Image upload function for chapters
+export async function uploadChapterImage(file) {
+  if (!file) return null;
+
+  try {
+    // Create a unique file name to avoid collisions
+    const fileExt = file.name.split(".").pop();
+    const fileName = `${uuidv4()}.${fileExt}`;
+    const filePath = `chapter-images/${fileName}`;
+
+    // Upload the file to the tally bucket
+    const { data, error } = await supabase.storage
+      .from("tally")
+      .upload(filePath, file, {
+        cacheControl: "3600",
+        upsert: false,
+      });
+
+    if (error) throw error;
+
+    // Get the public URL
+    const { data: publicUrlData } = supabase.storage
+      .from("tally")
+      .getPublicUrl(filePath);
+
+    return publicUrlData.publicUrl;
+  } catch (error) {
+    console.error("Error uploading image:", error);
+    throw error;
+  }
 }
 
 // React Query hooks for chapters
@@ -161,4 +194,16 @@ export function useDeleteChapter() {
   };
 
   return { deleteChapter: deleteChapterWithContext, isLoading };
+}
+
+// Optional: Create a React Query hook for image uploads
+export function useUploadChapterImage() {
+  const { mutateAsync, isLoading } = useMutation({
+    mutationFn: uploadChapterImage,
+    onError: (error) => {
+      toast.error(error.message || "Failed to upload image");
+    },
+  });
+
+  return { uploadChapterImage: mutateAsync, isUploading: isLoading };
 }

@@ -28,6 +28,7 @@ import {
   useChapter,
   useCreateChapter,
   useUpdateChapter,
+  useUploadChapterImage, // Add this import
 } from "../services/chapterHooks";
 import { getWritingInspiration } from "../services/geminiService";
 import { toast } from "react-hot-toast";
@@ -133,6 +134,8 @@ const ChapterForm = () => {
 
   const { createChapter, isLoading: isCreating } = useCreateChapter();
   const { updateChapter, isLoading: isUpdating } = useUpdateChapter();
+  const { uploadChapterImage, isUploading: isUploadingImage } =
+    useUploadChapterImage(); // Add this with your other hooks
 
   const [formData, setFormData] = useState({
     title: "",
@@ -171,6 +174,9 @@ const ChapterForm = () => {
     original: "",
     pasted: "",
   });
+
+  // Add fileInputRef
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (isEditMode && chapter) {
@@ -515,6 +521,51 @@ const ChapterForm = () => {
     return text.trim().split(/\s+/).length;
   };
 
+  const handleImageButtonClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+
+    try {
+      // Use the hook function to upload the image
+      const imageUrl = await uploadChapterImage(file);
+
+      // Insert the markdown with the image URL at cursor position
+      const textarea = textareaRef.current;
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const selectedText = formData.content.substring(start, end) || "Image";
+
+      const imageMarkdown = `![${selectedText}](${imageUrl})`;
+      const newText =
+        formData.content.substring(0, start) +
+        imageMarkdown +
+        formData.content.substring(end);
+
+      setFormData((prev) => ({ ...prev, content: newText }));
+
+      // Reset the file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+
+      toast.success("Image uploaded successfully");
+    } catch (error) {
+      toast.error("Failed to upload image");
+      console.error(error);
+    }
+  };
+
   const isLoading = isLoadingNovel || (isEditMode && isLoadingChapter);
   const isSaving = isCreating || isUpdating;
 
@@ -737,6 +788,28 @@ const ChapterForm = () => {
                           title="Get AI Inspiration"
                         >
                           <Sparkles size={18} />
+                        </button>
+                        {/* File input (hidden) */}
+                        <input
+                          type="file"
+                          ref={fileInputRef}
+                          onChange={handleFileUpload}
+                          accept="image/*"
+                          className="hidden"
+                        />
+                        {/* Replace your existing image button with this */}
+                        <button
+                          type="button"
+                          onClick={handleImageButtonClick}
+                          className="p-1 hover:bg-base-100 rounded"
+                          title="Upload Image"
+                          disabled={isUploadingImage}
+                        >
+                          {isUploadingImage ? (
+                            <Loader size={18} className="animate-spin" />
+                          ) : (
+                            <Image size={18} />
+                          )}
                         </button>
                         <div className="flex-grow"></div>
                         <button
