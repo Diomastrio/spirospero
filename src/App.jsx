@@ -23,6 +23,7 @@ import NovelDetail from "./pages/NovelDetail";
 import ChapterView from "./pages/ChapterView";
 import ImportDoc from "./pages/ImportDoc";
 import AuthCallback from "./pages/AuthCallback";
+import About from "./pages/About";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -54,6 +55,7 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/novel/:id" element={<NovelDetail />} />
+          <Route path="/about" element={<About />} />
           <Route
             path="/novel/:novelId/chapter/:chapterId"
             element={<ChapterView />}

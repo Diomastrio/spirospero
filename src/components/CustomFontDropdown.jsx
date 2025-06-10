@@ -42,7 +42,7 @@ function CustomFontDropdown({
     <div className="relative w-full" ref={dropdownRef}>
       <button
         type="button"
-        className="select select-bordered select-xs sm:select-sm bg-none !pr-3 w-full flex items-center justify-between text-left focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+        className="select select-bordered select-xs rounded-md sm:select-sm bg-none !pr-3 w-full flex items-center justify-between text-left focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
         onClick={handleToggle}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
@@ -65,8 +65,8 @@ function CustomFontDropdown({
               key={option.name}
               className={`px-3 py-1.5 text-sm cursor-pointer ${
                 option.value === selectedOptionValue
-                  ? "bg-primary text-primary-content"
-                  : "text-base-content hover:bg-primary hover:text-primary-content"
+                  ? "bg-primary text-primary-content rounded-md"
+                  : "text-base-content hover:bg-primary rounded-md"
               }`}
               onClick={() => handleSelectOption(option)}
               role="option"

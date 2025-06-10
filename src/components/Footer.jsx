@@ -5,21 +5,33 @@ export default function Footer() {
   return (
     <footer className=" p-8">
       <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-center pt-6 border-t border-gray-800">
-          <p className=" mb-4 md:mb-0">
+        <div className="flex flex-col md:flex-row justify-between items-center pt-6 border-t border-secondary">
+          <p className=" mb-4 md:mb-0 text-primary">
             © 2025 Spiro Spero. All rights reserved.
           </p>
           <div className="flex space-x-6">
-            <Link to="./pages/about" className=" hover:text-white">
+            <Link
+              to="/about"
+              className="text-primary hover:bg-neutral rounded-md"
+            >
               About
             </Link>
-            <Link to="/about" className=" hover:text-white">
+            <Link
+              to="/about"
+              className=" text-primary hover:bg-neutral rounded-md"
+            >
               Privacy
             </Link>
-            <Link to="/about" className=" hover:text-white">
+            <Link
+              to="/about"
+              className=" text-primary hover:bg-neutral rounded-md"
+            >
               Terms
             </Link>
-            <Link to="/about" className=" hover:text-white">
+            <Link
+              to="/about"
+              className=" text-primary hover:bg-neutral rounded-md"
+            >
               Contact
             </Link>
           </div>

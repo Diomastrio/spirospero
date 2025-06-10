@@ -12,6 +12,7 @@ import {
   BookOpenCheck,
   MessageCircle,
   ArrowUp,
+  ArrowDown, // Add ArrowDown import
   LayoutDashboard,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -43,6 +44,9 @@ function ChapterView() {
   // State for selected font
   const [selectedFont, setSelectedFont] = useState(fontOptions[0].value);
 
+  // Track scroll position
+  const [isNearTop, setIsNearTop] = useState(true);
+
   // Save current theme and set to forest when component mounts
   useEffect(() => {
     const previousTheme = currentTheme;
@@ -53,6 +57,39 @@ function ChapterView() {
       if (previousTheme !== "forest") {
         setTheme(previousTheme);
       }
+    };
+  }, []);
+
+  // Scroll to top when chapter changes
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [chapterId]);
+
+  // This ensures the page scrolls to top when you navigate between chapters using links
+  useEffect(() => {
+    // Function to handle changes to location
+    const handleRouteChange = () => {
+      window.scrollTo(0, 0);
+    };
+
+    // Clean up listener when component unmounts
+    return () => {
+      window.removeEventListener("popstate", handleRouteChange);
+    };
+  }, []);
+
+  // Monitor scroll position
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollThreshold = 300; // Adjust this value as needed
+      setIsNearTop(window.scrollY < scrollThreshold);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    handleScroll(); // Check initial position
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
     };
   }, []);
 
@@ -283,13 +320,24 @@ function ChapterView() {
         </div>
       </main>
 
-      {/* Scroll to top button */}
+      {/* Scroll button - changes direction based on position */}
       <button
-        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        onClick={() => {
+          if (isNearTop) {
+            // If near top, scroll to bottom
+            window.scrollTo({
+              top: document.body.scrollHeight,
+              behavior: "smooth",
+            });
+          } else {
+            // If not near top, scroll to top
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }
+        }}
         className="fixed bottom-6 right-6 bg-primary text-primary-content p-2 rounded-full shadow-lg hover:bg-primary-focus transition-colors duration-300"
-        aria-label="Scroll to top"
+        aria-label={isNearTop ? "Scroll to bottom" : "Scroll to top"}
       >
-        <ArrowUp size={20} />
+        {isNearTop ? <ArrowDown size={20} /> : <ArrowUp size={20} />}
       </button>
     </div>
   );

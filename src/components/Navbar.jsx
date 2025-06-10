@@ -207,7 +207,7 @@ export default function Navbar() {
   const isTimerHidden = timerActive && !showTimerDisplay;
 
   return (
-    <nav className="relative flex items-center justify-between p-4 border-b border-gray-800 z-40">
+    <nav className="relative flex items-center justify-between p-4 border-b border-secondary z-40">
       {/* Logo and desktop navigation */}
       <div className="flex items-center">
         <img src={src} alt="Logo" className="h-[3.5rem] w-[3.5rem]" />
