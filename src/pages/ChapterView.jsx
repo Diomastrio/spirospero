@@ -23,6 +23,7 @@ import { useThemeStore } from "../store/useThemeStore";
 import { useUser } from "../authentication/authHooks"; // Import useUser hook
 import CustomFontDropdown from "../components/CustomFontDropdown"; // Adjust path if necessary
 import CommentBox from "../components/CommentBox"; // Adjust path if necessary
+import AIAssistant from "../components/AIAssistant";
 
 function ChapterView() {
   const { novelId, chapterId } = useParams();
@@ -339,6 +340,11 @@ function ChapterView() {
       >
         {isNearTop ? <ArrowDown size={20} /> : <ArrowUp size={20} />}
       </button>
+
+      <AIAssistant
+        role="reader"
+        contextData={`Novel Title: ${novel?.title}\nChapter Title: ${chapter.title}\nChapter Content:\n${chapter.content?.substring(0, 4000)}`}
+      />
     </div>
   );
 }

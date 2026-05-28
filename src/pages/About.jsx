@@ -18,9 +18,11 @@ export default function About() {
           <div className="flex justify-center">
             <div className="relative">
               <div className="w-80 h-80 rounded-full bg-gradient-to-br from-primary to-secondary p-1">
-                <div className="w-full h-full rounded-full bg-gray-200 flex items-center justify-center text-6xl text-gray-600">
-                  👨‍💻
-                </div>
+                <img
+                  src="/Novsup.jpg"
+                  alt="Miguel - Profile"
+                  className="w-full h-full rounded-full object-cover"
+                />
               </div>
               <div className="absolute -bottom-4 -right-4 w-20 h-20 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center text-2xl">
                 ✨

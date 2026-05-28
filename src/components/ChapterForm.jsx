@@ -32,6 +32,8 @@ import {
 } from "../services/chapterHooks";
 import { getWritingInspiration } from "../services/geminiService";
 import { toast } from "react-hot-toast";
+import AIAssistant from "./AIAssistant";
+
 // *** NEW: Comparison Modal Component ***
 const ComparisonModal = ({
   isOpen,
@@ -129,7 +131,7 @@ const ChapterForm = () => {
 
   const { data: novel, isLoading: isLoadingNovel } = useNovel(novelId);
   const { data: chapter, isLoading: isLoadingChapter } = useChapter(
-    isEditMode ? chapterId : null
+    isEditMode ? chapterId : null,
   );
 
   const { createChapter, isLoading: isCreating } = useCreateChapter();
@@ -271,7 +273,7 @@ const ChapterForm = () => {
       textarea.focus();
       textarea.setSelectionRange(
         start + insertion.length,
-        start + insertion.length
+        start + insertion.length,
       );
     }, 0);
   };
@@ -377,7 +379,7 @@ const ChapterForm = () => {
         setShowContextMenu(false); // Hide if no selection on right click
       }
     },
-    [viewMode]
+    [viewMode],
   ); // Add dependencies
 
   // *** MODIFIED: Opens the comparison modal ***
@@ -394,7 +396,7 @@ const ChapterForm = () => {
     } catch (err) {
       console.error("Failed to read clipboard contents: ", err);
       toast.error(
-        "Failed to paste from clipboard. Browser permissions might be needed."
+        "Failed to paste from clipboard. Browser permissions might be needed.",
       );
     } finally {
       setShowContextMenu(false); // Hide context menu after action
@@ -489,7 +491,7 @@ const ChapterForm = () => {
 
     const selectedText = formData.content.substring(
       selectionRange.start,
-      selectionRange.end
+      selectionRange.end,
     );
     const prompt = `Modify this text: "${selectedText}"\n\nInstructions: ${selectionPrompt}\n\nProvide ONLY the modified text, no explanations.`;
 
@@ -875,8 +877,8 @@ const ChapterForm = () => {
                             ? "Saving..."
                             : "Creating..."
                           : isEditMode
-                          ? "Save Changes"
-                          : "Create Chapter"}
+                            ? "Save Changes"
+                            : "Create Chapter"}
                       </button>
                     </div>
                   </div>
@@ -1146,6 +1148,11 @@ const ChapterForm = () => {
           </div>
         </div>
       )}
+
+      <AIAssistant
+        role="author"
+        contextData={`Novel Info:\n${novel?.title}\n\nCurrent Chapter Draft:\n${formData.content?.substring(0, 4000)}`}
+      />
     </div>
   );
 };
