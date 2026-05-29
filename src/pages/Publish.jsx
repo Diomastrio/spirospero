@@ -1,41 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Check, AlertCircle, ChevronRight, Loader } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useUser } from "../authentication/authHooks";
-import {
-  createCheckoutSession,
-  getActiveSubscription,
-} from "../services/apiSubscription";
 import { toast } from "react-hot-toast";
 
 export default function Publish() {
   const { user } = useUser();
   const [selectedPlan, setSelectedPlan] = useState("monthly");
   const [isLoading, setIsLoading] = useState(false);
-  const [currentSubscription, setCurrentSubscription] = useState(null);
   const navigate = useNavigate();
-
-  // Define your Stripe price IDs (you'll get these from your Stripe dashboard)
-  const STRIPE_PRICES = {
-    monthly: "price_monthly_id_from_stripe",
-    yearly: "price_yearly_id_from_stripe",
-  };
-
-  // Fetch current subscription on component mount
-  useEffect(() => {
-    if (user) {
-      const fetchSubscription = async () => {
-        try {
-          const subscription = await getActiveSubscription(user.id);
-          setCurrentSubscription(subscription);
-        } catch (error) {
-          console.error("Error fetching subscription:", error);
-        }
-      };
-
-      fetchSubscription();
-    }
-  }, [user]);
 
   const handleSubscribe = async (planType) => {
     if (!user) {
@@ -44,24 +17,7 @@ export default function Publish() {
       return;
     }
 
-    setIsLoading(true);
-    try {
-      // Create a checkout session
-      const { url } = await createCheckoutSession({
-        priceId: STRIPE_PRICES[planType],
-        userId: user.id,
-        successUrl: window.location.origin + "/dashboard?subscription=success",
-        cancelUrl: window.location.origin + "/publish",
-      });
-
-      // Redirect to Stripe Checkout
-      window.location.href = url;
-    } catch (error) {
-      console.error("Error creating checkout session:", error);
-      toast.error("There was a problem setting up the checkout");
-    } finally {
-      setIsLoading(false);
-    }
+    toast.error("Subscriptions are temporarily disabled.");
   };
 
   const plans = {

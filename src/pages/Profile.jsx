@@ -11,7 +11,6 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { useUser, useUpdateUser, useLogout } from "../authentication/authHooks";
 import { toast } from "react-hot-toast";
-import supabase from "../services/supabaseClient";
 
 const Profile = () => {
   const { user, isLoading: userLoading } = useUser();
@@ -50,50 +49,9 @@ const Profile = () => {
 
     try {
       setIsDeleting(true);
-
-      // First, delete user's novels and related data
-      const { data: userNovels, error: novelsError } = await supabase
-        .from("novels")
-        .select("id")
-        .eq("author_id", user.id);
-
-      if (novelsError) throw new Error(novelsError.message);
-
-      // Delete chapters for each novel
-      if (userNovels.length > 0) {
-        const novelIds = userNovels.map((novel) => novel.id);
-        const { error: chaptersError } = await supabase
-          .from("chapters")
-          .delete()
-          .in("novel_id", novelIds);
-
-        if (chaptersError) throw new Error(chaptersError.message);
-
-        // Delete novels
-        const { error: deleteNovelsError } = await supabase
-          .from("novels")
-          .delete()
-          .eq("author_id", user.id);
-
-        if (deleteNovelsError) throw new Error(deleteNovelsError.message);
-      }
-
-      // Delete user profile
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .delete()
-        .eq("id", user.id);
-
-      if (profileError) throw new Error(profileError.message);
-
-      // Finally delete the user from auth
-      const { error: authError } = await supabase.auth.admin.deleteUser(
-        user.id
-      );
-      if (authError) throw new Error(authError.message);
-
-      toast.success("Account deleted successfully");
-      logout();
+      // Wait for Convex Auth API account deletion
+      toast.error("Account deletion is temporarily disabled.");
+      setIsDeleting(false);
     } catch (error) {
       toast.error(error.message || "Failed to delete account");
     } finally {

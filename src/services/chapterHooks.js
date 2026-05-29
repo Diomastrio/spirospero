@@ -1,209 +1,82 @@
-import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
-import { useNavigate, useParams } from "react-router-dom";
+import { useMutation, useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
+import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
-import supabase from "./supabaseClient";
-import { v4 as uuidv4 } from "uuid"; // Add this import
 
-// Chapter API functions
-async function createChapter({
-  novel_id: novelId,
-  chapter_number,
-  title,
-  content,
-}) {
-  const newChapter = {
-    novel_id: novelId,
-    chapter_number,
-    title,
-    content,
+export function useCreateChapter() {
+  const navigate = useNavigate();
+  const create = useMutation(api.chapters.create);
+
+  const createChapter = async (data) => {
+    try {
+      const result = await create(data);
+      toast.success("Chapter created successfully!");
+      return result;
+    } catch (err) {
+      toast.error(err.message || "Failed to create chapter");
+    }
   };
 
-  const { data, error } = await supabase
-    .from("chapters")
-    .insert([newChapter])
-    .select()
-    .single();
-  if (error) throw new Error(error.message);
-
-  return data;
-}
-
-async function getChapters(novel_id) {
-  const { data, error } = await supabase
-    .from("chapters")
-    .select("*")
-    .eq("novel_id", novel_id)
-    .order("chapter_number", { ascending: true });
-
-  if (error) throw new Error(error.message);
-  return data;
-}
-
-async function getChapter(id) {
-  const { data, error } = await supabase
-    .from("chapters")
-    .select("*")
-    .eq("id", id)
-    .single();
-
-  if (error) throw new Error(error.message);
-  return data;
-}
-
-async function updateChapter({ id, ...chapterData }) {
-  const { data, error } = await supabase
-    .from("chapters")
-    .update({ ...chapterData, updated_at: new Date().toISOString() })
-    .eq("id", id)
-    .select()
-    .single();
-
-  if (error) throw new Error(error.message);
-  return data;
-}
-
-async function deleteChapter(id) {
-  const { error } = await supabase.from("chapters").delete().eq("id", id);
-
-  if (error) throw new Error(error.message);
-  return { id };
-}
-
-// Image upload function for chapters
-export async function uploadChapterImage(file) {
-  if (!file) return null;
-
-  try {
-    // Create a unique file name to avoid collisions
-    const fileExt = file.name.split(".").pop();
-    const fileName = `${uuidv4()}.${fileExt}`;
-    const filePath = `chapter-images/${fileName}`;
-
-    // Upload the file to the tally bucket
-    const { data, error } = await supabase.storage
-      .from("tally")
-      .upload(filePath, file, {
-        cacheControl: "3600",
-        upsert: false,
-      });
-
-    if (error) throw error;
-
-    // Get the public URL
-    const { data: publicUrlData } = supabase.storage
-      .from("tally")
-      .getPublicUrl(filePath);
-
-    return publicUrlData.publicUrl;
-  } catch (error) {
-    console.error("Error uploading image:", error);
-    throw error;
-  }
-}
-
-// React Query hooks for chapters
-export function useCreateChapter() {
-  const queryClient = useQueryClient();
-  const navigate = useNavigate();
-  const { novelId } = useParams();
-
-  const { mutate: createChapterMutation, isLoading } = useMutation({
-    mutationFn: (chapterData) =>
-      createChapter({
-        ...chapterData,
-        novel_id: chapterData.novel_id || novelId,
-      }),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["chapters", data.novel_id] });
-      toast.success("Chapter created successfully!");
-      // Change this navigation path to match your route structure
-      navigate(`/novel/${data.novel_id}/chapters`);
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to create chapter");
-      console.error("Chapter creation error:", error);
-    },
-  });
-
-  return { createChapter: createChapterMutation, isLoading };
+  return { createChapter, isLoading: false };
 }
 
 export function useChapters(novel_id) {
-  return useQuery({
-    queryKey: ["chapters", novel_id],
-    queryFn: () => getChapters(novel_id),
-    enabled: !!novel_id,
-  });
+  const data = useQuery(api.chapters.getByNovel, novel_id ? { novel_id } : "skip");
+  return { chapters: data || [], isLoading: data === undefined, error: null };
 }
 
 export function useChapter(id) {
-  return useQuery({
-    queryKey: ["chapter", id],
-    queryFn: () => getChapter(id),
-    enabled: !!id,
-  });
+  const data = useQuery(api.chapters.getById, id ? { id } : "skip");
+  return { chapter: data, isLoading: data === undefined, error: null };
 }
 
 export function useUpdateChapter() {
-  const queryClient = useQueryClient();
+  const update = useMutation(api.chapters.update);
 
-  const { mutate: updateChapterMutation, isLoading } = useMutation({
-    mutationFn: updateChapter,
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["chapters", data.novel_id] });
-      queryClient.invalidateQueries({ queryKey: ["chapter", data.id] });
+  const updateChapter = async (data) => {
+    try {
+      const result = await update(data);
       toast.success("Chapter updated successfully!");
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to update chapter");
-    },
-  });
+      return result;
+    } catch (err) {
+      toast.error(err.message || "Failed to update chapter");
+    }
+  };
 
-  return { updateChapter: updateChapterMutation, isLoading };
+  return { updateChapter, isLoading: false };
 }
 
 export function useDeleteChapter() {
-  const queryClient = useQueryClient();
-  const navigate = useNavigate();
-  const { novelId } = useParams();
+  const remove = useMutation(api.chapters.remove);
 
-  const { mutate: deleteChapterMutation, isLoading } = useMutation({
-    mutationFn: deleteChapter,
-    onSuccess: (data, variables, context) => {
-      // We need to store novel_id in context to use it after deletion
-      queryClient.invalidateQueries({
-        queryKey: ["chapters", context.novel_id],
-      });
+  const deleteChapter = async (id) => {
+    try {
+      await remove({ id });
       toast.success("Chapter deleted successfully!");
-      navigate(`/novel/${context.novel_id}`);
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to delete chapter");
-    },
-  });
-
-  // Wrap the mutation to capture the novel_id before deletion
-  const deleteChapterWithContext = (id, novel_id = novelId) => {
-    if (!id) {
-      toast.error("Cannot delete chapter: Missing chapter ID");
-      return;
+    } catch (err) {
+      toast.error(err.message || "Failed to delete chapter");
     }
-    return deleteChapterMutation(id, {
-      context: { novel_id: novel_id || novelId },
-    });
   };
 
-  return { deleteChapter: deleteChapterWithContext, isLoading };
+  return { deleteChapter, isLoading: false };
 }
 
-// Optional: Create a React Query hook for image uploads
 export function useUploadChapterImage() {
-  const { mutateAsync, isLoading } = useMutation({
-    mutationFn: uploadChapterImage,
-    onError: (error) => {
-      toast.error(error.message || "Failed to upload image");
-    },
-  });
-
-  return { uploadChapterImage: mutateAsync, isUploading: isLoading };
+  const generateUploadUrl = useMutation(api.files.generateUploadUrl);
+  const uploadImage = async (file) => {
+    try {
+      const postUrl = await generateUploadUrl();
+      const result = await fetch(postUrl, {
+        method: "POST",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+      const { storageId } = await result.json();
+      return storageId; // Note: to view image later, you need to use useQuery(api.files.getUrl, { storageId }) or similar
+    } catch (error) {
+      toast.error("Failed to upload image");
+      throw error;
+    }
+  };
+  return { uploadImage, isUploading: false };
 }

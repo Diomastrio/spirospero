@@ -10,10 +10,10 @@ import {
   Calendar,
   Star,
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
 import { formatDistanceToNow } from "date-fns";
 import BookmarkButton from "../components/BookmarkButton";
-import supabase from "../services/supabaseClient";
 import RatingStars from "../components/RatingStars";
 import { useUser } from "../authentication/authHooks";
 
@@ -22,40 +22,12 @@ function NovelDetail() {
   const { user } = useUser();
 
   // Fetch novel details
-  const { data: novel, isLoading } = useQuery({
-    queryKey: ["novel", id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("novels")
-        .select(
-          `
-          *,
-          profiles:author_id(nickname)
-        `
-        )
-        .eq("id", id)
-        .single();
-
-      if (error) throw new Error(error.message);
-      return data;
-    },
-  });
+  const novel = useQuery(api.novels.getById, { id });
+  const isLoading = novel === undefined;
 
   // Fetch chapters
-  const { data: chapters } = useQuery({
-    queryKey: ["chapters", id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("chapters")
-        .select("*")
-        .eq("novel_id", id)
-        .order("chapter_number", { ascending: true });
-
-      if (error) throw new Error(error.message);
-      return data;
-    },
-    enabled: !!id,
-  });
+  const chaptersData = useQuery(api.chapters.getByNovel, { novel_id: id });
+  const chapters = chaptersData || [];
 
   if (isLoading) {
     return (

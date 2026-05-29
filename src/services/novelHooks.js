@@ -1,213 +1,84 @@
-import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useMutation, useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
 import { toast } from "react-hot-toast";
-import supabase from "./supabaseClient";
+import { useNavigate } from "react-router-dom";
 
-// Novel API functions
-async function createNovel({
-  title,
-  description,
-  cover_image_url,
-  genre,
-  status,
-}) {
-  const { data: userData } = await supabase.auth.getUser();
-  if (!userData.user)
-    throw new Error("You must be logged in to create a novel");
-
-  const newNovel = {
-    title,
-    author_id: userData.user.id,
-    description,
-    cover_image_url,
-    genre: genre || null,
-    status: status || "ongoing",
+export function useCreateNovel() {
+  const navigate = useNavigate();
+  const create = useMutation(api.novels.create);
+  
+  const createNovel = async (data) => {
+    try {
+      const result = await create(data);
+      toast.success("Novel created successfully!");
+      navigate("/dashboard");
+      return result;
+    } catch (err) {
+      toast.error(err.message || "Failed to create novel");
+    }
   };
 
-  const { data, error } = await supabase
-    .from("novels")
-    .insert([newNovel])
-    .select()
-    .single();
-
-  if (error) throw new Error(error.message);
-  return data;
-}
-
-async function getNovel(id) {
-  const { data, error } = await supabase
-    .from("novels")
-    .select("*")
-    .eq("id", id)
-    .single();
-
-  if (error) throw new Error(error.message);
-  return data;
-}
-
-async function getUserNovels() {
-  const { data: userData } = await supabase.auth.getUser();
-  if (!userData.user) return [];
-
-  const { data, error } = await supabase
-    .from("novels")
-    .select("*")
-    .eq("author_id", userData.user.id)
-    .order("updated_at", { ascending: false });
-
-  if (error) throw new Error(error.message);
-  return data;
-}
-
-async function updateNovel({ id, ...novelData }) {
-  const { data, error } = await supabase
-    .from("novels")
-    .update({ ...novelData, updated_at: new Date().toISOString() })
-    .eq("id", id)
-    .select()
-    .single();
-
-  if (error) throw new Error(error.message);
-  return data;
-}
-
-async function deleteNovel(id) {
-  // First delete associated chapters
-  const { error: chaptersError } = await supabase
-    .from("chapters")
-    .delete()
-    .eq("novel_id", id);
-
-  if (chaptersError) throw new Error(chaptersError.message);
-
-  // Then delete the novel
-  const { error } = await supabase.from("novels").delete().eq("id", id);
-
-  if (error) throw new Error(error.message);
-  return { id };
-}
-
-// Add this function with your other API functions
-async function publishNovel(id) {
-  // First get the current novel data
-  const { data: novel, error: fetchError } = await supabase
-    .from("novels")
-    .select("*")
-    .eq("id", id)
-    .single();
-
-  if (fetchError) throw new Error(fetchError.message);
-
-  // Toggle the published status
-  const isCurrentlyPublished = novel.published === true;
-
-  const { data, error } = await supabase
-    .from("novels")
-    .update({
-      published: !isCurrentlyPublished,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", id)
-    .select()
-    .single();
-
-  if (error) throw new Error(error.message);
-  return data;
-}
-
-// React Query hooks for novels
-export function useCreateNovel() {
-  const queryClient = useQueryClient();
-  const navigate = useNavigate();
-
-  const { mutate: createNovelMutation, isLoading } = useMutation({
-    mutationFn: createNovel,
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["novels"] });
-      toast.success("Novel created successfully!");
-      navigate(`/novel/${data.id}/chapters`);
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to create novel");
-    },
-  });
-
-  return { createNovel: createNovelMutation, isLoading };
+  return { createNovel, isLoading: false };
 }
 
 export function useUserNovels() {
-  return useQuery({
-    queryKey: ["novels", "user"],
-    queryFn: getUserNovels,
-  });
+  const data = useQuery(api.novels.getByAuthor);
+  return { novels: data || [], isLoading: data === undefined };
 }
 
 export function useNovel(id) {
-  return useQuery({
-    queryKey: ["novel", id],
-    queryFn: () => getNovel(id),
-    enabled: !!id,
-  });
+  const data = useQuery(api.novels.getById, id ? { id } : "skip");
+  return { novel: data, isLoading: data === undefined, error: null };
 }
 
 export function useUpdateNovel() {
-  const queryClient = useQueryClient();
+  const update = useMutation(api.novels.update);
   const navigate = useNavigate();
 
-  const { mutate: updateNovelMutation, isLoading } = useMutation({
-    mutationFn: updateNovel,
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["novels"] });
-      queryClient.invalidateQueries({ queryKey: ["novel", data.id] });
+  const updateNovel = async (data) => {
+    try {
+      const result = await update(data);
       toast.success("Novel updated successfully!");
-      navigate("/dashboard");
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to update novel");
-    },
-  });
+      return result;
+    } catch (err) {
+      toast.error(err.message || "Failed to update novel");
+    }
+  };
 
-  return { updateNovel: updateNovelMutation, isLoading };
+  return { updateNovel, isLoading: false };
 }
 
 export function useDeleteNovel() {
-  const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const remove = useMutation(api.novels.remove);
 
-  const { mutate: deleteNovelMutation, isLoading } = useMutation({
-    mutationFn: deleteNovel,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["novels"] });
+  const deleteNovel = async (id) => {
+    try {
+      await remove({ id });
       toast.success("Novel deleted successfully!");
       navigate("/dashboard");
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to delete novel");
-    },
-  });
+    } catch (err) {
+      toast.error(err.message || "Failed to delete novel");
+    }
+  };
 
-  return { deleteNovel: deleteNovelMutation, isLoading };
+  return { deleteNovel, isLoading: false };
 }
 
 export function usePublishNovel() {
-  const queryClient = useQueryClient();
+  const publish = useMutation(api.novels.publish);
   const navigate = useNavigate();
 
-  const { mutate: publishNovelMutation, isLoading: isPublishing } = useMutation(
-    {
-      mutationFn: publishNovel,
-      onSuccess: (data) => {
-        queryClient.invalidateQueries({ queryKey: ["novels"] });
-        queryClient.invalidateQueries({ queryKey: ["novel", data.id] });
-        const publishStatus = data.published ? "published" : "unpublished";
-        toast.success(`Novel ${publishStatus} successfully!`);
-        navigate("/dashboard");
-      },
-      onError: (error) => {
-        toast.error(error.message || "Failed to publish novel");
-      },
+  const publishNovel = async ({ id, published }) => {
+    try {
+      const result = await publish({ id, published });
+      toast.success(`Novel ${published ? "published" : "unpublished"} successfully!`);
+      navigate("/dashboard");
+      return result;
+    } catch (err) {
+      toast.error(err.message || "Failed to publish novel");
     }
-  );
+  };
 
-  return { publishNovel: publishNovelMutation, isPublishing };
+  return { publishNovel, isPublishing: false };
 }

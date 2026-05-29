@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ConvexProvider, ConvexReactClient } from "convex/react";
 import Browse from "./pages/Browse";
 import { useThemeStore } from "./store/useThemeStore";
 import Navbar from "./components/Navbar";
@@ -25,13 +25,7 @@ import ImportDoc from "./pages/ImportDoc";
 import AuthCallback from "./pages/AuthCallback";
 import About from "./pages/About";
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 60 * 1000,
-    },
-  },
-});
+const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL);
 
 function App() {
   const { theme } = useThemeStore();
@@ -42,7 +36,7 @@ function App() {
   }, [theme]);
 
   return (
-    <QueryClientProvider client={queryClient}>
+    <ConvexProvider client={convex}>
       <div
         className="min-h-screen transition-colors duration-300"
         data-theme={theme}
@@ -89,7 +83,7 @@ function App() {
         <Toaster />
         <Footer />
       </div>
-    </QueryClientProvider>
+    </ConvexProvider>
   );
 }
 

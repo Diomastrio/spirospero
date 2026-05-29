@@ -5,6 +5,10 @@ import App from "./App.jsx";
 import { ErrorBoundary } from "react-error-boundary";
 import ErrorFallback from "./components/errorfallback.jsx";
 import { BrowserRouter } from "react-router-dom";
+import { ConvexAuthProvider } from "@convex-dev/auth/react";
+import { ConvexReactClient } from "convex/react";
+
+const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL);
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
@@ -12,9 +16,11 @@ createRoot(document.getElementById("root")).render(
       FallbackComponent={ErrorFallback}
       onreset={() => window.location.replace("/")}
     >
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
+      <ConvexAuthProvider client={convex}>
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
+      </ConvexAuthProvider>
     </ErrorBoundary>
-  </StrictMode>
+  </StrictMode>,
 );

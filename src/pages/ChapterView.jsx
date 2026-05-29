@@ -15,10 +15,10 @@ import {
   ArrowDown, // Add ArrowDown import
   LayoutDashboard,
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import supabase from "../services/supabaseClient";
 import { useThemeStore } from "../store/useThemeStore";
 import { useUser } from "../authentication/authHooks"; // Import useUser hook
 import CustomFontDropdown from "../components/CustomFontDropdown"; // Adjust path if necessary
@@ -95,51 +95,16 @@ function ChapterView() {
   }, []);
 
   // Fetch chapter data
-  const { data: chapter, isLoading: isLoadingChapter } = useQuery({
-    queryKey: ["chapter", chapterId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("chapters")
-        .select("*")
-        .eq("id", chapterId)
-        .single();
-
-      if (error) throw new Error(error.message);
-      return data;
-    },
-  });
+  const chapter = useQuery(api.chapters.getById, { id: chapterId });
+  const isLoadingChapter = chapter === undefined;
 
   // Fetch novel data
-  const { data: novel, isLoading: isLoadingNovel } = useQuery({
-    queryKey: ["novel", novelId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("novels")
-        .select("*")
-        .eq("id", novelId)
-        .single();
-
-      if (error) throw new Error(error.message);
-      return data;
-    },
-    enabled: !!novelId,
-  });
+  const novel = useQuery(api.novels.getById, { id: novelId });
+  const isLoadingNovel = novel === undefined;
 
   // Fetch all chapters to enable navigation
-  const { data: chapters, isLoading: isLoadingChapters } = useQuery({
-    queryKey: ["chapters", novelId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("chapters")
-        .select("*")
-        .eq("novel_id", novelId)
-        .order("chapter_number", { ascending: true });
-
-      if (error) throw new Error(error.message);
-      return data;
-    },
-    enabled: !!novelId,
-  });
+  const chapters = useQuery(api.chapters.getByNovel, { novel_id: novelId });
+  const isLoadingChapters = chapters === undefined;
 
   const isLoading = isLoadingChapter || isLoadingNovel || isLoadingChapters;
 

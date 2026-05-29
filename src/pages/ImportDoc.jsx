@@ -22,7 +22,6 @@ import { toast } from "react-hot-toast";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { getWritingInspiration } from "../services/geminiService";
-import { getChatGPTInspiration } from "../services/openaiService";
 
 function ImportDoc() {
   const [content, setContent] = useState("");
@@ -47,7 +46,7 @@ function ImportDoc() {
     } catch (err) {
       console.error("Failed to read clipboard contents: ", err);
       toast.error(
-        "Failed to paste from clipboard. Browser permissions might be needed, or try pasting directly into the text area."
+        "Failed to paste from clipboard. Browser permissions might be needed, or try pasting directly into the text area.",
       );
     }
   };
@@ -70,7 +69,7 @@ function ImportDoc() {
         reader.readAsText(file);
       } else {
         toast.error(
-          "Invalid file type. Please upload a plain text file (.txt)."
+          "Invalid file type. Please upload a plain text file (.txt).",
         );
       }
       // Reset file input value so the same file can be loaded again if needed
@@ -130,7 +129,7 @@ function ImportDoc() {
       textarea.focus();
       textarea.setSelectionRange(
         start + insertion.length,
-        start + insertion.length
+        start + insertion.length,
       );
     }, 0);
   };

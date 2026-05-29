@@ -1,35 +1,20 @@
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
-import { toast } from "react-hot-toast";
-import { handleAuthCallback } from "../services/apiAuth";
+import { useConvexAuth } from "convex/react";
 
 function AuthCallback() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
+  const { isAuthenticated } = useConvexAuth();
 
   useEffect(() => {
-    async function processCallback() {
-      try {
-        // Process the auth callback and create profile
-        const userData = await handleAuthCallback();
-
-        // Update the user data in React Query
-        queryClient.setQueryData(["user"], userData.user);
-
-        // Invalidate to ensure we get fresh data
-        await queryClient.invalidateQueries(["user"]);
-
-        navigate("/home", { replace: true });
-      } catch (error) {
-        console.error("Authentication callback error:", error);
-        toast.error(`Authentication failed: ${error.message}`);
-        navigate("/login", { replace: true });
-      }
+    // With Convex Auth Password provider, auth is handled via Login/Register pages
+    // This route is kept for compatibility but simply redirects authenticated users
+    if (isAuthenticated) {
+      navigate("/home", { replace: true });
+    } else {
+      navigate("/login", { replace: true });
     }
-
-    processCallback();
-  }, [navigate, queryClient]);
+  }, [navigate, isAuthenticated]);
 
   return (
     <div className="flex items-center justify-center min-h-screen">

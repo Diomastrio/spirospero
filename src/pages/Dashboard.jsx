@@ -7,10 +7,9 @@ import {
   usePublishNovel,
 } from "../services/novelHooks";
 import { formatDistanceToNow } from "date-fns";
-import supabase from "../services/supabaseClient";
 
 const NovelNestDashboard = () => {
-  const { data: novels, isLoading, isError } = useUserNovels();
+  const { novels, isLoading, isError } = useUserNovels();
   const { deleteNovel, isLoading: isDeleting } = useDeleteNovel();
   const { publishNovel, isPublishing } = usePublishNovel();
 
@@ -18,6 +17,8 @@ const NovelNestDashboard = () => {
   const [wordCounts, setWordCounts] = useState({});
   const [totalChapters, setTotalChapters] = useState(0);
   const [showWordCountDetails, setShowWordCountDetails] = useState(false);
+
+  const convex = useConvex();
 
   // Calculate word counts when novels data changes
   useEffect(() => {
@@ -30,10 +31,9 @@ const NovelNestDashboard = () => {
       // Process each novel sequentially
       for (const novel of novels) {
         try {
-          const { data: chapters } = await supabase
-            .from("chapters")
-            .select("*")
-            .eq("novel_id", novel.id);
+          const chapters = await convex.query(api.chapters.getByNovel, {
+            novel_id: novel._id,
+          });
 
           if (chapters) {
             chapterCount += chapters.length;
@@ -42,17 +42,17 @@ const NovelNestDashboard = () => {
               (sum, chapter) =>
                 sum +
                 (chapter.content?.split(/\s+/).filter(Boolean).length || 0),
-              0
+              0,
             );
-            novelWordCounts[novel.id] = {
+            novelWordCounts[novel._id] = {
               title: novel.title,
               wordCount: novelWords,
             };
           }
         } catch (error) {
           console.error(
-            `Error fetching chapters for novel ${novel.id}:`,
-            error
+            `Error fetching chapters for novel ${novel._id}:`,
+            error,
           );
         }
       }
@@ -67,7 +67,7 @@ const NovelNestDashboard = () => {
   // Calculate total word count
   const totalWordCount = Object.values(wordCounts).reduce(
     (sum, novel) => sum + novel.wordCount,
-    0
+    0,
   );
 
   // Toggle word count details
@@ -78,7 +78,7 @@ const NovelNestDashboard = () => {
   const handleDeleteNovel = (id) => {
     if (
       confirm(
-        "Are you sure you want to delete this novel? This action cannot be undone."
+        "Are you sure you want to delete this novel? This action cannot be undone.",
       )
     ) {
       deleteNovel(id);
@@ -149,7 +149,7 @@ const NovelNestDashboard = () => {
               <div className="space-y-6">
                 {novels.map((novel) => (
                   <div
-                    key={novel.id}
+                    key={novel._id}
                     className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 border border-gray-700 rounded-lg hover:border-gray-500 transition-all gap-4"
                   >
                     <div className="flex items-center w-full md:w-auto">
@@ -178,14 +178,14 @@ const NovelNestDashboard = () => {
                     </div>
                     <div className="flex flex-wrap gap-2 w-full md:w-auto justify-start md:justify-end">
                       <Link
-                        to={`/novel/${novel.id}/chapters`}
+                        to={`/novel/${novel._id}/chapters`}
                         className="flex items-center px-3 py-1.5 rounded hover:bg-gray-800 text-sm"
                       >
                         <Book className="mr-1" size={16} />
                         Chapters
                       </Link>
                       <Link
-                        to={`/novel/${novel.id}/edit`}
+                        to={`/novel/${novel._id}/edit`}
                         className="flex items-center px-3 py-1.5 rounded hover:bg-gray-800 text-sm"
                       >
                         <Edit className="mr-1" size={16} />
@@ -194,14 +194,14 @@ const NovelNestDashboard = () => {
                       <button
                         className="flex items-center px-3 py-1.5 rounded hover:bg-gray-800 text-sm"
                         disabled={isPublishing}
-                        onClick={() => handlePublishNovel(novel.id)}
+                        onClick={() => handlePublishNovel(novel._id)}
                       >
                         <BookCheck className="mr-1" size={16} />
                         {novel.published ? "Unpublish" : "Publish"}
                       </button>
                       <button
                         className="flex items-center px-3 py-1.5 rounded hover:bg-gray-800 text-sm"
-                        onClick={() => handleDeleteNovel(novel.id)}
+                        onClick={() => handleDeleteNovel(novel._id)}
                         disabled={isDeleting}
                       >
                         <Trash2 className="mr-1" size={16} />

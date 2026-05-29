@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
 import { Link } from "react-router-dom";
 import {
   Book,
@@ -10,7 +11,6 @@ import {
   User,
   BookOpen,
 } from "lucide-react";
-import supabase from "../services/supabaseClient";
 import BookmarkButton from "../components/BookmarkButton";
 import CustomFontDropdown from "../components/CustomFontDropdown"; // Import the custom dropdown
 
@@ -23,24 +23,9 @@ function Browse() {
   const [searchOpen, setSearchOpen] = useState(false);
 
   // Fetch published novels
-  const { data: novels, isLoading } = useQuery({
-    queryKey: ["publishedNovels"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("novels")
-        .select(
-          `
-          *,
-          profiles:author_id(nickname)
-        `
-        )
-        .eq("published", true)
-        .order("updated_at", { ascending: false });
-
-      if (error) throw new Error(error.message);
-      return data;
-    },
-  });
+  const data = useQuery(api.novels.listAll);
+  const isLoading = data === undefined;
+  const novels = data || [];
 
   useEffect(() => {
     if (novels) {
@@ -86,12 +71,12 @@ function Browse() {
   const sortedNovels = filteredNovels ? [...filteredNovels] : [];
   if (sortOrder === "oldest") {
     sortedNovels.sort(
-      (a, b) => new Date(a.updated_at) - new Date(b.updated_at)
+      (a, b) => new Date(a.updated_at) - new Date(b.updated_at),
     );
   } else {
     // Default to latest (newest first)
     sortedNovels.sort(
-      (a, b) => new Date(b.updated_at) - new Date(a.updated_at)
+      (a, b) => new Date(b.updated_at) - new Date(a.updated_at),
     );
   }
 
