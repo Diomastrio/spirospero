@@ -27,7 +27,7 @@ export function useUser() {
     isLoading: user === undefined,
     user,
     isAuthenticated: !!user,
-    isAdmin: user?.role === "admin",
+    isAdmin: user?.isAdmin || user?.role === "admin",
   };
 }
 
@@ -55,9 +55,16 @@ export function useSignup() {
   const { signIn } = useAuthActions();
   const navigate = useNavigate();
 
-  const signup = async ({ email, password, fullName }) => {
+  const signup = async ({ email, password, nickname, role }) => {
     try {
-      await signIn("password", { email, password, name: fullName, flow: "signUp" });
+      await signIn("password", {
+        email,
+        password,
+        name: nickname,
+        role,
+        isAdmin: role === "admin",
+        flow: "signUp",
+      });
       toast.success("Account created successfully!");
       navigate("/dashboard", { replace: true });
     } catch (error) {
@@ -70,7 +77,7 @@ export function useSignup() {
 
 export function useGoogleLogin() {
   const { signIn } = useAuthActions();
-  
+
   const googleLogin = async () => {
     toast.error("Google Auth is temporarily disabled");
   };

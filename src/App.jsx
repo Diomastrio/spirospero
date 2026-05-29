@@ -1,6 +1,5 @@
 import React, { useEffect } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
-import { ConvexProvider, ConvexReactClient } from "convex/react";
 import Browse from "./pages/Browse";
 import { useThemeStore } from "./store/useThemeStore";
 import Navbar from "./components/Navbar";
@@ -25,8 +24,6 @@ import ImportDoc from "./pages/ImportDoc";
 import AuthCallback from "./pages/AuthCallback";
 import About from "./pages/About";
 
-const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL);
-
 function App() {
   const { theme } = useThemeStore();
 
@@ -36,54 +33,49 @@ function App() {
   }, [theme]);
 
   return (
-    <ConvexProvider client={convex}>
-      <div
-        className="min-h-screen transition-colors duration-300"
-        data-theme={theme}
-      >
-        <Navbar />
-        <Routes>
-          <Route path="/" element={<Navigate to="/home" />} />
-          <Route path="/home" element={<Homepage />} />
-          <Route path="/browse" element={<Browse />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/novel/:id" element={<NovelDetail />} />
-          <Route path="/about" element={<About />} />
-          <Route
-            path="/novel/:novelId/chapter/:chapterId"
-            element={<ChapterView />}
-          />
-          <Route path="/auth/callback" element={<AuthCallback />} />
-          {/* Protected routes - require authentication */}
-          <Route element={<ProtectedRoute />}>
-            <Route path="/import-doc" element={<ImportDoc />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/publish" element={<Publish />} />
-            <Route path="/bookmarks" element={<Bookmarks />} />
-          </Route>
+    <div
+      className="min-h-screen transition-colors duration-300"
+      data-theme={theme}
+    >
+      <Navbar />
+      <Routes>
+        <Route path="/" element={<Navigate to="/home" />} />
+        <Route path="/home" element={<Homepage />} />
+        <Route path="/browse" element={<Browse />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/novel/:id" element={<NovelDetail />} />
+        <Route path="/about" element={<About />} />
+        <Route
+          path="/novel/:novelId/chapter/:chapterId"
+          element={<ChapterView />}
+        />
+        <Route path="/auth/callback" element={<AuthCallback />} />
+        {/* Protected routes - require authentication */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/import-doc" element={<ImportDoc />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/publish" element={<Publish />} />
+          <Route path="/bookmarks" element={<Bookmarks />} />
+        </Route>
 
-          {/* Admin-only routes */}
-          <Route element={<ProtectedAdminRoute />}>
-            <Route path="/create-novel" element={<CreateNovel />} />
-            <Route path="/novel/:id/edit" element={<EditNovel />} />
-            <Route path="/novel/:novelId/chapters" element={<ChaptersList />} />
-            <Route
-              path="/novel/:novelId/chapter/new"
-              element={<ChapterForm />}
-            />
-            <Route
-              path="/novel/:novelId/chapter/:chapterId/edit"
-              element={<ChapterForm />}
-            />
-            <Route path="/dashboard" element={<NovelNestDashboard />} />
-            {/* Add other admin-only routes here */}
-          </Route>
-        </Routes>
-        <Toaster />
-        <Footer />
-      </div>
-    </ConvexProvider>
+        {/* Admin-only routes */}
+        <Route element={<ProtectedAdminRoute />}>
+          <Route path="/create-novel" element={<CreateNovel />} />
+          <Route path="/novel/:id/edit" element={<EditNovel />} />
+          <Route path="/novel/:novelId/chapters" element={<ChaptersList />} />
+          <Route path="/novel/:novelId/chapter/new" element={<ChapterForm />} />
+          <Route
+            path="/novel/:novelId/chapter/:chapterId/edit"
+            element={<ChapterForm />}
+          />
+          <Route path="/dashboard" element={<NovelNestDashboard />} />
+          {/* Add other admin-only routes here */}
+        </Route>
+      </Routes>
+      <Toaster />
+      <Footer />
+    </div>
   );
 }
 
